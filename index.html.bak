@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futbol DT - Los Palometas</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="dark-theme">
+
+    <!-- Login Screen Overlay -->
+    <div id="login-overlay" class="login-overlay active">
+        <div class="login-card">
+            <img src="images/logo.png" alt="Logo" class="login-logo">
+            <h1>FUTBOL<span>DT</span></h1>
+            <p>Inicia sesión para acceder al panel técnico</p>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="Contraseña" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> INGRESAR
+                </button>
+            </form>
+            <p class="login-footer">Los Palometas FC - Gestión de Plantilla</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation (Desktop/Tablet) -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="images/logo.png" alt="Logo" class="main-logo">
+            <h2>PALOMETAS<span>FC</span></h2>
+        </div>
+        <ul class="nav-links">
+            <li class="active" data-screen="home"><i class="fas fa-home"></i> <span>Inicio</span></li>
+            <li data-screen="players"><i class="fas fa-users"></i> <span>Jugadoras</span></li>
+            <li data-screen="tactic"><i class="fas fa-chalkboard-user"></i> <span>Pizarra Táctica</span></li>
+            <li data-screen="attendance"><i class="fas fa-clipboard-check"></i> <span>Asistencia</span></li>
+            <li data-screen="planning"><i class="fas fa-calendar-alt"></i> <span>Planificación</span></li>
+            <li data-screen="stats"><i class="fas fa-chart-line"></i> <span>Estadísticas</span></li>
+            <li data-screen="config" id="nav-config" style="display: none;"><i class="fas fa-cog"></i>
+                <span>Configuración</span>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="auth.logout()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+            <p>v1.0 Online</p>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Screen: Home -->
+        <section id="screen-home" class="screen active">
+            <header>
+                <h1>Panel de Control</h1>
+                <p>Bienvenido, Director Técnico</p>
+            </header>
+
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <i class="fas fa-user-check"></i>
+                    <div class="stat-info">
+                        <h3>24</h3>
+                        <p>Jugadoras Activas</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="stat-info">
+                        <h3>Hoy</h3>
+                        <p>Próximo Entrenamiento</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-file-pdf"></i>
+                    <div class="stat-info">
+                        <h3>12</h3>
+                        <p>Reportes Guardados</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-actions">
+                <h2>Acceso Rápido</h2>
+                <div class="action-grid">
+                    <button class="action-btn" onclick="app.showScreen('tactic')">
+                        <i class="fas fa-chalkboard"></i>
+                        Abrir Pizarra
+                    </button>
+                    <button class="action-btn" onclick="app.showScreen('attendance')">
+                        <i class="fas fa-user-plus"></i>
+                        Tomar Asistencia
+                    </button>
+                    <button class="action-btn" onclick="app.showScreen('players')">
+                        <i class="fas fa-user-edit"></i>
+                        Ver Plantilla
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen: Tactic Board (The most complex one) -->
+        <section id="screen-tactic" class="screen">
+            <header class="tactic-header">
+                <div class="title-group">
+                    <h1>Pizarra Táctica</h1>
+                    <div class="tactic-inputs">
+                        <input type="text" id="rival-name" placeholder="Rival / Evento">
+                        <input type="date" id="match-date">
+                    </div>
+                </div>
+                <div class="tactic-controls">
+                    <button class="btn btn-secondary" onclick="tacticBoard.clear()"><i class="fas fa-eraser"></i>
+                        Limpiar</button>
+                    <button class="btn btn-primary" onclick="tacticBoard.save()"><i class="fas fa-save"></i>
+                        Guardar</button>
+                </div>
+            </header>
+
+            <div class="tactic-layout">
+                <!-- Left Panel: Players -->
+                <aside class="players-panel">
+                    <h3>Plantilla</h3>
+                    <div class="category-tabs">
+                        <button class="active">1ra</button>
+                        <button>Res</button>
+                        <button>Sub17</button>
+                    </div>
+                    <div id="player-pool" class="player-pool">
+                        <!-- Players will be added here -->
+                    </div>
+
+                    <div class="drawing-tools">
+                        <h3>Herramientas</h3>
+                        <div class="tool-grid">
+                            <button class="tool-btn active" data-tool="move" title="Mover"><i
+                                    class="fas fa-mouse-pointer"></i></button>
+                            <button class="tool-btn" data-tool="line" title="Línea"><i
+                                    class="fas fa-minus"></i></button>
+                            <button class="tool-btn" data-tool="arrow" title="Flecha"><i
+                                    class="fas fa-long-arrow-alt-right"></i></button>
+                            <button class="tool-btn" data-tool="opponent" title="Contrincante"><i class="fas fa-circle"
+                                    style="color: blue;"></i></button>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Center: Field -->
+                <div class="field-container">
+                    <canvas id="tactic-canvas"></canvas>
+                </div>
+
+                <!-- Right Panel: Substitutes -->
+                <aside class="options-panel">
+                    <h3>Suplentes</h3>
+                    <textarea id="substitutes-text" placeholder="Lista de suplentes..."></textarea>
+
+                    <div class="history-section">
+                        <h3>Historial</h3>
+                        <div id="formation-history" class="history-list">
+                            <!-- Saved formations -->
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- Placeholder screens -->
+        <section id="screen-players" class="screen">
+            <h1>Gestión de Jugadoras</h1>
+            <p>Próximamente...</p>
+        </section>
+        <section id="screen-attendance" class="screen">
+            <h1>Asistencia</h1>
+            <p>Próximamente...</p>
+        </section>
+        <section id="screen-planning" class="screen">
+            <h1>Planificación</h1>
+            <p>Próximamente...</p>
+        </section>
+        <section id="screen-stats" class="screen">
+            <h1>Estadísticas</h1>
+            <p>Próximamente...</p>
+        </section>
+
+        <!-- Screen: Configuration (Only for perrolocosanchez) -->
+        <section id="screen-config" class="screen">
+            <header>
+                <h1>Configuración de Acceso</h1>
+                <p>Gestiona los correos autorizados para el cuerpo técnico</p>
+            </header>
+
+            <div class="config-container">
+                <div class="config-card">
+                    <h3>Agregar Nuevo Acceso</h3>
+                    <div class="config-input-row">
+                        <div class="input-group">
+                            <i class="fas fa-user-plus"></i>
+                            <input type="email" id="new-user-email" placeholder="Email del compañero">
+                        </div>
+                        <button class="btn btn-primary" onclick="auth.addUserAccess()">
+                            <i class="fas fa-plus"></i> Habilitar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="config-card">
+                    <h3>Usuarios Habilitados</h3>
+                    <div id="authorized-users-list" class="user-list">
+                        <!-- Lista de emails autorizados -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/tactic-board.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,121 @@
+const auth = {
+    currentUser: null,
+    ownerEmail: 'perrolocosanchez@live.com',
+    authorizedUsers: [],
+
+    init() {
+        this.addEventListeners();
+        this.checkSession();
+    },
+
+    addEventListeners() {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                this.login(email, password);
+            });
+        }
+    },
+
+    checkSession() {
+        const savedUser = localStorage.getItem('palometas_session');
+        const savedUsers = localStorage.getItem('palometas_authorized_users');
+
+        if (savedUsers) {
+            this.authorizedUsers = JSON.parse(savedUsers);
+        } else {
+            // Lista inicial vacía
+            this.authorizedUsers = [];
+        }
+
+        if (savedUser) {
+            this.currentUser = JSON.parse(savedUser);
+            this.onLoginSuccess();
+        }
+    },
+
+    login(email, password) {
+        const authorizedPassword = 'palometas';
+        const lowerEmail = email.toLowerCase();
+
+        const isOwner = lowerEmail === this.ownerEmail.toLowerCase();
+        const isAuthorized = this.authorizedUsers.some(u => u.toLowerCase() === lowerEmail);
+
+        if ((isOwner || isAuthorized) && password === authorizedPassword) {
+            this.currentUser = { email: lowerEmail, name: isOwner ? 'Director Técnico' : 'Cuerpo Técnico', isOwner: isOwner };
+            localStorage.setItem('palometas_session', JSON.stringify(this.currentUser));
+            this.onLoginSuccess();
+        } else {
+            alert("Acceso denegado. Credenciales incorrectas.");
+        }
+    },
+
+    logout() {
+        localStorage.removeItem('palometas_session');
+        this.currentUser = null;
+        window.location.reload();
+    },
+
+    onLoginSuccess() {
+        const overlay = document.getElementById('login-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
+
+        // Mostrar panel de configuración SOLO si es el dueño
+        const configNav = document.getElementById('nav-config');
+        if (configNav) {
+            configNav.style.display = this.currentUser.isOwner ? 'flex' : 'none';
+        }
+
+        if (this.currentUser.isOwner) {
+            this.renderUserList();
+        }
+
+        console.log("Bienvenido: " + this.currentUser.email);
+    },
+
+    addUserAccess() {
+        const input = document.getElementById('new-user-email');
+        const email = input.value.trim().toLowerCase();
+
+        if (email && !this.authorizedUsers.includes(email) && email !== this.ownerEmail) {
+            this.authorizedUsers.push(email);
+            localStorage.setItem('palometas_authorized_users', JSON.stringify(this.authorizedUsers));
+            input.value = '';
+            this.renderUserList();
+        } else {
+            alert("Email inválido o ya autorizado.");
+        }
+    },
+
+    removeUserAccess(email) {
+        this.authorizedUsers = this.authorizedUsers.filter(u => u !== email);
+        localStorage.setItem('palometas_authorized_users', JSON.stringify(this.authorizedUsers));
+        this.renderUserList();
+    },
+
+    renderUserList() {
+        const list = document.getElementById('authorized-users-list');
+        if (!list) return;
+
+        list.innerHTML = '';
+        this.authorizedUsers.forEach(email => {
+            const div = document.createElement('div');
+            div.className = 'user-item-row';
+            div.innerHTML = `
+                <span>${email}</span>
+                <button class="btn-delete-small" onclick="auth.removeUserAccess('${email}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            list.appendChild(div);
+        });
+    }
+};
+
+window.addEventListener('DOMContentLoaded', () => auth.init());

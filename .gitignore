@@ -1,6 +1,30 @@
-node_modules/
-.DS_Store
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# Database
 *.db
-*.bak
-.vercel/
-.env
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gemini/AI
+.gemini/
