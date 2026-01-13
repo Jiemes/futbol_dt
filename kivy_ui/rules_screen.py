@@ -44,7 +44,7 @@ class RulesScreen(MDScreen):
         content.add_widget(btn_search)
         
         # Botones Carga
-        btn_load = MDButton(MDButtonText(text="CARGAR PDF SUB-16 (Simulado)"), style="tonal")
+        btn_load = MDButton(MDButtonText(text="CARGAR PDF SUB-17 (Simulado)"), style="tonal")
         btn_load.bind(on_release=self.load_sub16_pdf)
         content.add_widget(btn_load)
 
@@ -63,10 +63,10 @@ class RulesScreen(MDScreen):
         # Verificar si existe "Reglamento Inferiores Femenino.pdf" en la carpeta
         try:
             text = extract_text_from_pdf("Reglamento Inferiores Femenino.pdf")
-            reg = Regulation(categoria="Sub-16", titulo="Reglamento General 2025", contenido=text)
+            reg = Regulation(categoria="Sub-17", titulo="Reglamento General 2025", contenido=text)
             db.add(reg)
             db.commit()
-            self.result_label.text = "Reglamento Sub-16 Cargado Exitosamente."
+            self.result_label.text = "Reglamento Sub-17 Cargado Exitosamente."
         except Exception as e:
             self.result_label.text = f"Error: Pon el archivo PDF en la carpeta. {e}"
         finally: db.close()

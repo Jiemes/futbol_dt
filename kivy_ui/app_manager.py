@@ -15,8 +15,9 @@ from kivy_ui.tactic_screen import TacticScreen
 from kivy_ui.task_screen import TaskScreen
 from kivy_ui.dashboard_screen import DashboardScreen
 from kivy_ui.rules_screen import RulesScreen
-
 from kivy_ui.exercise_screen import ExerciseScreen
+from kivy_ui.gif_maker_screen import GifMakerScreen
+
 
 class MainScreen(MDScreen):
     def __init__(self, **kw):
@@ -41,6 +42,7 @@ class MainScreen(MDScreen):
             ("Tareas Staff", 'tasks_screen'),
             ("Dashboard Riesgo", 'dashboard_screen'),
             ("Reglamentos", 'rules_screen'),
+            ("Creador de GIFs", 'gif_maker_screen'),
         ]
         
         for text_label, screen_name in menu_items:
@@ -72,4 +74,5 @@ class PalometasApp(MDApp):
         sm.add_widget(DashboardScreen())
         sm.add_widget(RulesScreen())
         sm.add_widget(ExerciseScreen())
+        sm.add_widget(GifMakerScreen())
         return sm

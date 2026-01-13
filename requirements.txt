@@ -4,3 +4,5 @@ sqlalchemy>=2.0.0
 matplotlib
 pillow
 pytest
+pypdf
+reportlab

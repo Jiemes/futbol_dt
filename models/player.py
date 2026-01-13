@@ -5,7 +5,7 @@ from datetime import date
 import enum
 
 class Category(enum.Enum):
-    sub_16 = "Sub-16"
+    sub_16 = "Sub-17" # Renamed from Sub-16, kept variable name for compatibility or refactor all if prefer
     primera = "Primera"
     mixta = "Mixta"
 
@@ -50,6 +50,7 @@ class Player(Base):
     
     # Relación
     activities = relationship("PlayerActivity", back_populates="player", cascade="all, delete-orphan")
+    injuries = relationship("PlayerInjury", back_populates="player", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Player {self.nombre_completo}>"

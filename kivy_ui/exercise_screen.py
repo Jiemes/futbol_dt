@@ -6,19 +6,20 @@ from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.label import MDLabel
-from kivymd.uix.filemanager import MDFileManager
 from kivymd.app import MDApp
 from kivy.uix.image import Image as KivyImage 
 
 from database.db_setup import SessionLocal
 from utils import crud
 from models.exercise import ExerciseObjective, ExerciseIntensity, ExerciseCategory
+import preload_data # Para cargar ejercicios base
 
 # IMPORTS KIVYMD 2.0
 from kivymd.uix.button import MDButton, MDButtonText, MDExtendedFabButton, MDExtendedFabButtonIcon, MDExtendedFabButtonText, MDButtonIcon
 from kivymd.uix.appbar import MDTopAppBar, MDTopAppBarTitle, MDTopAppBarLeadingButtonContainer, MDActionTopAppBarButton
 from kivymd.uix.dialog import MDDialog, MDDialogHeadlineText, MDDialogButtonContainer, MDDialogContentContainer
 from kivymd.uix.card import MDCard 
+from kivymd.uix.list import MDListItem, MDListItemHeadlineText
 
 class ExerciseScreen(MDScreen):
     def __init__(self, **kw):
@@ -28,15 +29,9 @@ class ExerciseScreen(MDScreen):
         self.current_filter = None
         self.current_exercise_id = None
         self.dialog = None
+        self.media_selector_dialog = None
+        self.filter_buttons = {}
         
-        # FILE MANAGER
-        self.file_manager = MDFileManager(
-            exit_manager=self.exit_manager,
-            select_path=self.select_path,
-            preview=False, # False para evitar crashes con thumbnails
-            ext=['.png', '.jpg', '.jpeg', '.gif', '.mp4', '.mov', '.avi', 
-                 '.PNG', '.JPG', '.JPEG', '.GIF', '.MP4', '.MOV', '.AVI'] 
-        )
         self.selected_media_path = ""
         
         self.build_ui()
@@ -59,13 +54,23 @@ class ExerciseScreen(MDScreen):
         filter_scroll = MDScrollView(size_hint_y=None, height="60dp", do_scroll_y=False, do_scroll_x=True, bar_width=0)
         filter_box = MDBoxLayout(orientation='horizontal', padding="10dp", spacing="10dp", adaptive_width=True)
         
-        btn_all = MDButton(MDButtonText(text="Todos"), style="outlined", height="32dp")
+        btn_all = MDButton(MDButtonText(text="Todos"), style="filled", height="32dp", theme_bg_color="Custom", md_bg_color=(0.55, 0, 0, 1))
         btn_all.bind(on_release=lambda x: self.filter_exercises(None))
+        self.filter_buttons["Todos"] = btn_all
         filter_box.add_widget(btn_all)
+        
+        btn_import = MDButton(MDButtonText(text="IMPORTAR BASE"), style="filled", theme_bg_color="Custom", md_bg_color=(0.2, 0.4, 0.2, 1), height="32dp")
+        btn_import.bind(on_release=self.run_import_base)
+        filter_box.add_widget(btn_import)
+
+        btn_gif = MDButton(MDButtonText(text="CREAR GIF"), style="filled", theme_bg_color="Custom", md_bg_color=(0, 0.4, 0.6, 1), height="32dp")
+        btn_gif.bind(on_release=lambda x: setattr(MDApp.get_running_app().root, 'current', 'gif_maker_screen'))
+        filter_box.add_widget(btn_gif)
 
         for obj in ExerciseObjective:
             btn = MDButton(MDButtonText(text=obj.value), style="tonal", height="32dp")
             btn.bind(on_release=lambda x, o=obj: self.filter_exercises(o))
+            self.filter_buttons[obj.value] = btn
             filter_box.add_widget(btn)
         
         filter_scroll.add_widget(filter_box)
@@ -93,6 +98,23 @@ class ExerciseScreen(MDScreen):
 
     def filter_exercises(self, objective):
         self.current_filter = objective
+        
+        # Actualizar colores de botones (Selección Visual)
+        target_text = objective.value if objective else "Todos"
+        for text, btn in self.filter_buttons.items():
+            if text == target_text:
+                # Botón seleccionado: Rojo oscuro (estilo marca)
+                btn.style = "filled"
+                btn.theme_bg_color = "Custom"
+                btn.md_bg_color = (0.55, 0, 0, 1)
+                btn.children[0].theme_text_color = "Custom"
+                btn.children[0].text_color = (1, 1, 1, 1)
+            else:
+                # Botón no seleccionado: Estilo tonal (gris suave)
+                btn.style = "tonal"
+                btn.theme_bg_color = "Primary"
+                btn.children[0].theme_text_color = "Primary"
+
         self.load_exercises()
 
     def create_card(self, ex):
@@ -210,6 +232,15 @@ class ExerciseScreen(MDScreen):
             self.load_exercises()
         finally: db.close()
 
+    def run_import_base(self, instance):
+        try:
+            preload_data.load_data()
+            self.load_exercises()
+            # Alerta simple (podríamos usar snackbar pero no tengo importado aqui, asumo print o dialog visual simple si falla)
+            print("Importación finalizada") 
+        except Exception as e:
+            print(f"Error importando: {e}")
+
     # --- FORMULARIO ---
     def show_exercise_form(self, exercise_id=None):
         self.current_exercise_id = exercise_id
@@ -251,10 +282,10 @@ class ExerciseScreen(MDScreen):
         self.cat_in.add_widget(MDTextFieldHintText(text="Categoría"))
         self.cat_in.bind(focus=lambda x, f: self.open_menu(x, [e.value for e in ExerciseCategory]))
 
-        # Selector Archivo
+        # Selector Archivo mejorado
         label_text = "Cambiar GIF/Video" if ex and ex.foto_path else "Subir GIF/Video"
         self.btn_media = MDButton(MDButtonText(text=label_text), style="tonal", size_hint_x=1)
-        self.btn_media.bind(on_release=self.open_file_manager)
+        self.btn_media.bind(on_release=self.open_media_selector)
         
         path_text = os.path.basename(ex.foto_path) if ex and ex.foto_path else "Ninguno"
         self.lbl_media = MDLabel(text=f"Archivo: {path_text}", theme_text_color="Primary", font_style="Label", role="small", size_hint_y=None, height="20dp")
@@ -282,21 +313,54 @@ class ExerciseScreen(MDScreen):
         field.text = text
         field.focus = False
 
-    def open_file_manager(self, instance):
-        self.file_manager.show(os.path.expanduser("~")) 
+    def open_media_selector(self, instance):
+        # Crear diálogo con buscador y lista de assets/exercises
+        content = MDBoxLayout(orientation='vertical', spacing='10dp', size_hint_y=None, height='450dp', padding="10dp")
+        
+        search_field = MDTextField(mode="outlined")
+        search_field.add_widget(MDTextFieldHintText(text="Buscar video/gif..."))
+        content.add_widget(search_field)
+        
+        self.media_list_box = MDBoxLayout(orientation='vertical', adaptive_height=True, spacing="5dp")
+        scroll = MDScrollView(); scroll.add_widget(self.media_list_box)
+        content.add_widget(scroll)
+        
+        # Escanear archivos
+        media_folder = os.path.join(os.getcwd(), "assets", "exercises")
+        if not os.path.exists(media_folder): os.makedirs(media_folder)
+        
+        all_files = [f for f in os.listdir(media_folder) if f.lower().endswith(('.gif', '.mp4', '.png', '.jpg'))]
+        
+        def populate_list(filter_text=""):
+            self.media_list_box.clear_widgets()
+            filtered = [f for f in all_files if filter_text.lower() in f.lower()]
+            for f in filtered:
+                item = MDListItem(
+                    MDListItemHeadlineText(text=f),
+                    on_release=lambda x, fname=f: self.select_media_file(fname)
+                )
+                self.media_list_box.add_widget(item)
+                
+        search_field.bind(text=lambda x, v: populate_list(v))
+        populate_list()
+        
+        btn_close = MDButton(MDButtonText(text="CANCELAR"), style="tonal")
+        btn_close.bind(on_release=lambda x: self.media_selector_dialog.dismiss())
+        
+        self.media_selector_dialog = MDDialog(
+            MDDialogHeadlineText(text="Seleccionar Media"),
+            MDDialogContentContainer(content, orientation="vertical"),
+            MDDialogButtonContainer(btn_close)
+        )
+        self.media_selector_dialog.open()
 
-    def select_path(self, path):
-        self.exit_manager()
-        if os.path.isfile(path):
-            self.selected_media_path = path
-            self.lbl_media.text = f"Seleccionado: {os.path.basename(path)}"
-            self.lbl_media.theme_text_color = "Primary"
-        else:
-            self.lbl_media.text = "Error: Es una carpeta"
-            self.lbl_media.theme_text_color = "Error"
+    def select_media_file(self, filename):
+        media_path = os.path.join(os.getcwd(), "assets", "exercises", filename)
+        self.selected_media_path = media_path
+        self.lbl_media.text = f"Seleccionado: {filename}"
+        if self.media_selector_dialog:
+            self.media_selector_dialog.dismiss()
 
-    def exit_manager(self, *args):
-        self.file_manager.close()
 
     def save_exercise(self, instance):
         db = SessionLocal()

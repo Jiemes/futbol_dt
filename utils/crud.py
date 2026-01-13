@@ -4,6 +4,7 @@ from models.activity import PlayerActivity
 from models.exercise import Exercise, ExerciseCategory
 from models.session import Session as TrainingSession
 from models.task import Task, StaffRole, TaskStatus, TaskPriority # Asegúrate de tener models/task.py
+from models.formation import Formation
 from datetime import date
 from typing import List, Optional, Any
 
@@ -110,13 +111,13 @@ def remove_exercise_from_session(db: Session, session_id: int, exercise_id: int)
         sess.exercises.remove(ex)
         db.commit()
 
-def create_session(db: Session, titulo: str, fecha: date, categoria: str, tipo: Any):
+def create_session(db: Session, titulo: str, fecha: date, categoria: str, tipo: Any, grupo: str = "General"):
     new_sess = TrainingSession(
         titulo=titulo, 
         fecha=fecha, 
-        # CORRECCIÓN: Usamos 'categoria'
         categoria=categoria, 
-        tipo_sesion=tipo
+        tipo_sesion=tipo,
+        grupo=grupo
     )
     db.add(new_sess)
     db.commit()
@@ -156,5 +157,94 @@ def create_task(db: Session, **kwargs):
     db.commit()
     return task
 
-def get_all_tasks(db: Session):
     return db.query(Task).all() # Simplificado
+
+# ==============================================================================
+# 5. LESIONES (INJURIES)
+# ==============================================================================
+from models.injury import PlayerInjury
+
+def create_injury(db: Session, player_id: int, tipo: str, fecha: date, obs: str = ""):
+    inj = PlayerInjury(player_id=player_id, tipo_lesion=tipo, fecha_lesion=fecha, observacion=obs)
+    db.add(inj)
+    db.commit()
+    return inj
+
+def update_injury_alta(db: Session, injury_id: int, fecha_alta: date):
+    inj = db.query(PlayerInjury).get(injury_id)
+    if inj:
+        inj.fecha_alta = fecha_alta
+        db.commit()
+        return inj
+    return None
+
+def get_player_injuries(db: Session, player_id: int):
+    return db.query(PlayerInjury).filter(PlayerInjury.player_id == player_id).order_by(PlayerInjury.fecha_lesion.desc()).all()
+
+# ==============================================================================
+# 6. ACTIVIDADES (PLAYER ACTIVITY) - HISTORIAL Y EDICION
+# ==============================================================================
+def get_activities_by_date(db: Session, fecha: date, tipo: str = None) -> List[PlayerActivity]:
+    query = db.query(PlayerActivity).filter(PlayerActivity.fecha == fecha)
+    if tipo:
+        query = query.filter(PlayerActivity.tipo == tipo)
+    return query.all()
+
+def update_activity(db: Session, act_id: int, updates: dict):
+    act = db.query(PlayerActivity).get(act_id)
+    if act:
+        for key, value in updates.items():
+            if hasattr(act, key):
+                setattr(act, key, value)
+        db.commit()
+        return act
+    return None
+
+def delete_activity(db: Session, act_id: int):
+    act = db.query(PlayerActivity).get(act_id)
+    if act:
+        db.delete(act)
+        db.commit()
+        return True
+    return False
+
+# ==============================================================================
+# 7. EVALUACIONES (TEST RESULTS)
+# ==============================================================================
+from models.test_result import TestResult
+
+def create_test_result(db: Session, player_id: int, exercise_id: int, valor: str, obs: str = ""):
+    tr = TestResult(player_id=player_id, exercise_id=exercise_id, valor_resultado=valor, observaciones=obs)
+    db.add(tr)
+    db.commit()
+    return tr
+
+def get_player_test_results(db: Session, player_id: int):
+    return db.query(TestResult).filter(TestResult.player_id == player_id).order_by(TestResult.fecha.desc()).all()
+
+# ==============================================================================
+# 8. FORMACIONES (FORMATIONS)
+# ==============================================================================
+def create_formation(db: Session, **kwargs):
+    new_f = Formation(**kwargs)
+    db.add(new_f)
+    db.commit()
+    db.refresh(new_f)
+    return new_f
+
+def get_all_formations(db: Session, categoria: str = None):
+    query = db.query(Formation)
+    if categoria:
+        query = query.filter(Formation.categoria == categoria)
+    return query.order_by(Formation.fecha_partido.desc()).all()
+
+def get_formation_by_id(db: Session, f_id: int):
+    return db.query(Formation).get(f_id)
+
+def delete_formation(db: Session, f_id: int):
+    f = db.query(Formation).get(f_id)
+    if f:
+        db.delete(f)
+        db.commit()
+        return True
+    return False

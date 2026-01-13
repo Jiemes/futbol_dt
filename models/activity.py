@@ -16,7 +16,11 @@ class PlayerActivity(Base):
     fecha = Column(Date, default=date.today)
     tipo = Column(SqlEnum(ActivityType), nullable=False)
     
-    # SIN MINUTOS - Solo goles y detalle
+    # DATOS DE CARGA (Para cálculo de Riesgo)
+    minutos = Column(Integer, default=0)
+    intensidad = Column(Integer, default=0) # Escala de Borg (0-10)
+    performance_score = Column(Integer, default=0) # 1-10 Puntaje del DT
+    
     goles = Column(Integer, default=0)
     detalle = Column(String, nullable=True)
     

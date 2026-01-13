@@ -33,6 +33,7 @@ class Session(Base):
     
     tipo_sesion = Column(SqlEnum(SessionType), nullable=False)
     carga_total_estimada = Column(Float, default=0.0)
+    grupo = Column(String, default="General") # Pretemporada, Marzo-Mayo, etc.
     
     exercises = relationship("Exercise", secondary=session_exercises_table, backref="sessions")
 

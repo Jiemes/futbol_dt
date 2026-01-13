@@ -11,7 +11,7 @@ from kivymd.uix.screenmanager import MDScreenManager
 from database.db_setup import SessionLocal
 from utils import crud
 from utils.pdf_utils import generate_player_stats_pdf
-from models.player import Category, Position
+from models.player import Category, Position, Player
 from models.activity import PlayerActivity, ActivityType
 from datetime import date
 
@@ -65,7 +65,7 @@ class PlayerScreen(MDScreen):
         lists_container = MDBoxLayout(orientation='horizontal', spacing='10dp', padding='10dp', pos_hint={"top": 1, "bottom": 0}, size_hint=(1, 1))
         
         sub16_box = MDBoxLayout(orientation='vertical', spacing='5dp')
-        sub16_box.add_widget(MDLabel(text="SUB-16", halign="center", bold=True, theme_text_color="Custom", text_color=(0.55, 0, 0, 1), size_hint_y=None, height="30dp"))
+        sub16_box.add_widget(MDLabel(text="SUB-17", halign="center", bold=True, theme_text_color="Custom", text_color=(0.55, 0, 0, 1), size_hint_y=None, height="30dp"))
         self.sub16_list = MDBoxLayout(orientation='vertical', adaptive_height=True, spacing="5dp")
         scroll1 = MDScrollView(); scroll1.add_widget(self.sub16_list)
         sub16_box.add_widget(scroll1)
@@ -181,9 +181,171 @@ class PlayerScreen(MDScreen):
         btn_pdf = MDButton(MDButtonText(text="Descargar Ficha Individual"), style="tonal", size_hint_x=1)
         btn_pdf.bind(on_release=lambda x: [self.dialog.dismiss(), self.export_pdf(player)])
 
-        content.add_widget(btn_edit); content.add_widget(btn_pdf)
+        btn_inj = MDButton(MDButtonText(text="Historial Lesiones"), style="tonal", size_hint_x=1)
+        btn_inj.bind(on_release=lambda x: [self.dialog.dismiss(), self.show_injuries(player)])
+
+        btn_tests = MDButton(MDButtonText(text="Historial de Pruebas"), style="tonal", size_hint_x=1)
+        btn_tests.bind(on_release=lambda x: [self.dialog.dismiss(), self.show_test_history_dialog(player.id)])
+
+        btn_del = MDButton(MDButtonText(text="ELIMINAR JUGADORA"), style="tonal", theme_bg_color="Custom", md_bg_color=(0.8, 0, 0, 1), size_hint_x=1)
+        btn_del.bind(on_release=lambda x: [self.dialog.dismiss(), self.confirm_delete_player(player)])
+
+        content.add_widget(btn_edit); content.add_widget(btn_pdf); content.add_widget(btn_inj); content.add_widget(btn_tests); content.add_widget(btn_del)
         self.dialog = MDDialog(MDDialogHeadlineText(text=player.nombre_completo), MDDialogContentContainer(content, orientation="vertical"))
         self.dialog.open()
+
+    def confirm_delete_player(self, player):
+        content = MDLabel(text=f"¿Estás seguro de eliminar a {player.nombre_completo}?\nSe borrarán todos sus datos y estadísticas.", halign="center")
+        btn_yes = MDButton(MDButtonText(text="SI, ELIMINAR"), style="filled", theme_bg_color="Custom", md_bg_color=(1, 0, 0, 1))
+        btn_yes.bind(on_release=lambda x: self.delete_player_action(player))
+        
+        btn_no = MDButton(MDButtonText(text="CANCELAR"), style="tonal")
+        btn_no.bind(on_release=lambda x: self.dialog.dismiss())
+        
+        self.dialog = MDDialog(MDDialogHeadlineText(text="Confirmar Eliminación"), MDDialogContentContainer(content, orientation="vertical"), MDDialogButtonContainer(btn_no, btn_yes))
+        self.dialog.open()
+
+    def delete_player_action(self, player):
+        db = SessionLocal()
+        try:
+            crud.delete_player(db, player.id)
+            self.dialog.dismiss()
+            self.show_alert("Jugadora Eliminada")
+            self.load_player_list()
+        except Exception as e:
+            self.show_alert(f"Error: {e}")
+        finally: db.close()
+
+    def show_injuries(self, player):
+        db = SessionLocal()
+        injuries = crud.get_player_injuries(db, player.id)
+        db.close()
+        
+        content = MDBoxLayout(orientation='vertical', spacing='10dp', size_hint_y=None, height='400dp')
+        
+        # Lista
+        scroll = MDScrollView()
+        list_box = MDBoxLayout(orientation='vertical', adaptive_height=True, spacing='5dp')
+        if not injuries:
+            list_box.add_widget(MDLabel(text="No hay lesiones registradas", halign="center"))
+        
+        for inj in injuries:
+            status = "Activa" if not inj.fecha_alta else f"Alta: {inj.fecha_alta}"
+            color = (0.8, 0, 0, 1) if not inj.fecha_alta else (0, 0.6, 0, 1)
+            
+            # Texto secundario: Estado | Fecha Alta | Observacion
+            sec_text = f"{status} | {inj.observacion}"
+            
+            item = MDListItem(
+                MDListItemHeadlineText(text=f"{inj.tipo_lesion} ({inj.fecha_lesion})"),
+                MDListItemSupportingText(text=sec_text, theme_text_color="Custom", text_color=color),
+            )
+            # Click para dar de alta O editar fecha alta
+            item.bind(on_release=lambda x, iid=inj.id: self.show_discharge_dialog(iid, player))
+            list_box.add_widget(item)
+            
+        scroll.add_widget(list_box)
+        content.add_widget(scroll)
+        
+        # Formulario Add
+        form_box = MDBoxLayout(orientation='vertical', spacing='5dp', adaptive_height=True)
+        self.inj_type = MDTextField(mode="outlined"); self.inj_type.add_widget(MDTextFieldHintText(text="Tipo Lesión"))
+        self.inj_date = MDTextField(mode="outlined", text=str(date.today())); self.inj_date.add_widget(MDTextFieldHintText(text="Fecha (YYYY-MM-DD)"))
+        self.inj_obs = MDTextField(mode="outlined"); self.inj_obs.add_widget(MDTextFieldHintText(text="Observación"))
+        
+        add_btn = MDButton(MDButtonText(text="+ Agregar Lesión"), style="filled", theme_bg_color="Custom", md_bg_color=(0.55, 0, 0, 1))
+        add_btn.bind(on_release=lambda x: self.save_injury(player))
+        
+        form_box.add_widget(self.inj_type); form_box.add_widget(self.inj_date); form_box.add_widget(self.inj_obs); form_box.add_widget(add_btn)
+        content.add_widget(form_box)
+        
+        self.dialog = MDDialog(MDDialogHeadlineText(text=f"Lesiones: {player.nombre_completo}"), MDDialogContentContainer(content, orientation="vertical"))
+        self.dialog.open()
+
+    def show_test_history_dialog(self, player_id):
+        db = SessionLocal()
+        results = crud.get_player_test_results(db, player_id)
+        player = crud.get_player_by_id(db, player_id)
+        
+        content = MDBoxLayout(orientation='vertical', spacing='10dp', size_hint_y=None, height='400dp', padding="10dp")
+        scroll = MDScrollView()
+        list_box = MDBoxLayout(orientation='vertical', adaptive_height=True, spacing="5dp")
+
+        if not results:
+            list_box.add_widget(MDLabel(text="No hay registros de evaluaciones.", halign="center"))
+        else:
+            for r in results:
+                # Obtenemos título del ejercicio para el registro
+                ex = db.query(crud.Exercise).get(r.exercise_id)
+                ex_title = ex.titulo if ex else f"Prueba {r.exercise_id}"
+                
+                item = MDListItem(
+                    MDListItemHeadlineText(text=ex_title),
+                    MDListItemSupportingText(text=f"Resultado: {r.valor_resultado}"),
+                    MDListItemTertiaryText(text=f"Fecha: {r.fecha}"),
+                    theme_bg_color="Custom", md_bg_color=(0.95, 0.95, 0.95, 1)
+                )
+                list_box.add_widget(item)
+        db.close()
+
+        scroll.add_widget(list_box)
+        content.add_widget(scroll)
+
+        btn_close = MDButton(MDButtonText(text="CERRAR"), style="tonal")
+        btn_close.bind(on_release=lambda x: self.dialog.dismiss())
+
+        self.dialog = MDDialog(
+            MDDialogHeadlineText(text=f"Evaluaciones: {player.nombre_completo}"), 
+            MDDialogContentContainer(content, orientation="vertical"),
+            MDDialogButtonContainer(btn_close)
+        )
+        self.dialog.open()
+
+    def show_discharge_dialog(self, inj_id, player):
+        # Dialogo para pedir fecha de alta
+        content = MDBoxLayout(orientation='vertical', spacing='10dp', size_hint_y=None, height='100dp')
+        self.discharge_date_in = MDTextField(mode="outlined", text=str(date.today()))
+        self.discharge_date_in.add_widget(MDTextFieldHintText(text="Fecha de Alta (YYYY-MM-DD)"))
+        content.add_widget(self.discharge_date_in)
+        
+        btn_confirm = MDButton(MDButtonText(text="DAR DE ALTA"), style="filled", theme_bg_color="Custom", md_bg_color=(0, 0.6, 0, 1))
+        btn_confirm.bind(on_release=lambda x: self.mark_recovered(inj_id, player))
+        
+        self.dialog_discharge = MDDialog(MDDialogHeadlineText(text="Confirmar Alta"), MDDialogContentContainer(content, orientation="vertical"), MDDialogButtonContainer(btn_confirm))
+        self.dialog_discharge.open()
+
+    def save_injury(self, player):
+        if not self.inj_type.text: return
+        db = SessionLocal()
+        try:
+            d_val = date.fromisoformat(self.inj_date.text)
+            crud.create_injury(db, player.id, self.inj_type.text, d_val, self.inj_obs.text)
+            
+            # Actualizar estado de salud del jugador a "Lesionada"
+            crud.update_player(db, player.id, {"estado_salud_actual": "Lesionada"})
+            
+            self.dialog.dismiss()
+            self.show_alert("Lesión Agregada")
+            self.load_player_list() # Refrescar lista principal
+        except Exception as e:
+            print(e)
+            self.show_alert("Error fecha")
+        finally: db.close()
+
+    def mark_recovered(self, inj_id, player):
+        db = SessionLocal()
+        try:
+            d_val = date.fromisoformat(self.discharge_date_in.text)
+            crud.update_injury_alta(db, inj_id, d_val)
+            # Volver a estado Apto
+            crud.update_player(db, player.id, {"estado_salud_actual": "Apto"})
+            self.dialog_discharge.dismiss()
+            self.dialog.dismiss()
+            self.show_alert("Alta Registrada")
+            self.load_player_list()
+        except:
+             self.show_alert("Fecha Inválida")
+        finally: db.close()
 
     def export_pdf(self, player):
         db = SessionLocal()
