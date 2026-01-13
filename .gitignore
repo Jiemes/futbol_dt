@@ -1,27 +1,6 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.pytest_cache/
-
-# Database
-*.db
-*.sqlite3
-
-# OS
+node_modules/
 .DS_Store
-Thumbs.db
+*.db
+*.bak
+.vercel/
+.env
