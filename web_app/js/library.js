@@ -66,34 +66,6 @@ const libraryManager = {
         }
     },
 
-    async uploadExerciseGif(file) {
-        if (!file || !window.supabaseClient) return;
-
-        const btn = document.querySelector('.btn-gallery'); // El botón que lanza esto
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-        try {
-            const fileName = `upload_${Date.now()}_${file.name}`;
-            const { data, error } = await window.supabaseClient.storage
-                .from('tactical_gifs')
-                .upload(fileName, file);
-
-            if (error) throw error;
-
-            const { data: { publicUrl } } = window.supabaseClient.storage
-                .from('tactical_gifs')
-                .getPublicUrl(fileName);
-
-            document.getElementById('ex-gif').value = publicUrl;
-            alert("¡GIF subido con éxito!");
-        } catch (err) {
-            alert("Error al subir: " + err.message);
-        } finally {
-            btn.innerHTML = originalHtml;
-        }
-    },
-
     async deleteExercise(id, e) {
         if (e) e.stopPropagation();
         if (confirm("¿Eliminar este ejercicio de la biblioteca?") && window.supabaseClient) {

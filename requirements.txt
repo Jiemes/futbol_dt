@@ -1,0 +1,8 @@
+kivy>=2.3.0
+https://github.com/kivymd/KivyMD/archive/master.zip
+sqlalchemy>=2.0.0
+matplotlib
+pillow
+pytest
+pypdf
+reportlab

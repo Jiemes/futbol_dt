@@ -731,21 +731,15 @@
                     <textarea id="ex-desc" placeholder="Detalles del ejercicio..."></textarea>
                 </div>
                 <div class="input-group">
-                    <label>Imagen / Animación (GIF)</label>
+                    <label>Archivo GIF</label>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="ex-gif" placeholder="URL del GIF o selecciona" style="flex:1;">
-                        <button type="button" class="btn btn-secondary btn-gallery"
-                            onclick="libraryManager.showGifGallery(true)" title="Galería de GIFs creados">
+                        <input type="url" id="ex-gif" placeholder="URL del GIF o selecciona de galería" style="flex:1;">
+                        <button type="button" class="btn btn-secondary" onclick="libraryManager.showGifGallery(true)"
+                            title="Galería de GIFs creados">
                             <i class="fas fa-images"></i>
                         </button>
-                        <button type="button" class="btn btn-secondary btn-upload"
-                            onclick="document.getElementById('ex-upload').click()" title="Subir desde PC">
-                            <i class="fas fa-upload"></i>
-                        </button>
-                        <input type="file" id="ex-upload" style="display:none;" accept="image/gif,image/png,image/jpeg"
-                            onchange="libraryManager.uploadExerciseGif(this.files[0])">
                     </div>
-                    <small class="text-muted">Pega una URL, elige de tus GIFs o sube uno nuevo.</small>
+                    <small class="text-muted">Puedes pegar una URL o elegir uno creado en el Creador de GIFs.</small>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
