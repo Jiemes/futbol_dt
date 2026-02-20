@@ -11,9 +11,12 @@ const firebaseConfig = {
 // Inicializar Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
+    try {
+        firebase.analytics();
+    } catch (e) {
+        console.warn("Firebase Analytics no se pudo inicializar:", e);
+    }
 }
 
 window.db = firebase.firestore();
-// window.storage = firebase.storage(); // Deshabilitado para usar plan Spark sin tarjeta
 window.authFirebase = firebase.auth();

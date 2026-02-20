@@ -10,8 +10,13 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (Compat Mode)
-firebase.initializeApp(firebaseConfig);
-firebase.analytics();
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+    try {
+        firebase.analytics();
+    } catch (e) {
+        console.warn("Analytics not initialized:", e);
+    }
+}
 window.db = firebase.firestore();
-// window.storage = firebase.storage();
 window.authFirebase = firebase.auth();
