@@ -1,9 +1,4 @@
-// Configuración de Supabase
-const SUPABASE_URL = 'https://jpsqjyxrrilfesgfivoo.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_z2vaIDgKV3ZrMsqpAz-0-A_qmoUsCs8';
-
-// Inicializar el cliente de Supabase
-window.supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+// Firebase ya está inicializado en firebase-config.js
 
 window.auth = {
     currentUser: null,
@@ -66,11 +61,13 @@ window.auth = {
     },
 
     async loadAuthorizedUsers() {
-        if (!window.supabaseClient) return;
-        const { data, error } = await window.supabaseClient.from('authorized_users').select('email');
-        if (!error && data) {
-            this.authorizedUsers = data.map(u => u.email.toLowerCase());
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('authorized_users').get();
+            this.authorizedUsers = snapshot.docs.map(doc => doc.data().email.toLowerCase());
             this.renderUserList();
+        } catch (error) {
+            console.error("Error cargando usuarios autorizados:", error);
         }
     },
 
@@ -84,9 +81,12 @@ window.auth = {
         const isOwner = lowerEmail === this.ownerEmail.toLowerCase();
 
         let isAuthorized = isOwner;
-        if (!isOwner && window.supabaseClient) {
-            const { data, error } = await window.supabaseClient.from('authorized_users').select('email').eq('email', lowerEmail).single();
-            if (data && !error) isAuthorized = true;
+        if (!isOwner && window.db) {
+            const snapshot = await window.db.collection('authorized_users')
+                .where('email', '==', lowerEmail)
+                .limit(1)
+                .get();
+            if (!snapshot.empty) isAuthorized = true;
         }
 
         if (isAuthorized && password === authorizedPassword) {
@@ -144,22 +144,34 @@ window.auth = {
         const input = document.getElementById('new-user-email');
         const email = input.value.trim().toLowerCase();
 
-        if (email && email !== this.ownerEmail && window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('authorized_users').insert([{ email: email }]);
-            if (!error) {
-                input.value = '';
-                await this.loadAuthorizedUsers();
-            } else {
-                alert("Error: El mail ya existe o es inválido.");
+        if (email && email !== this.ownerEmail && window.db) {
+            try {
+                // Verificar si ya existe
+                const snapshot = await window.db.collection('authorized_users').where('email', '==', email).get();
+                if (snapshot.empty) {
+                    await window.db.collection('authorized_users').add({ email: email });
+                    input.value = '';
+                    await this.loadAuthorizedUsers();
+                } else {
+                    alert("Email ya habilitado.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error al habilitar mail.");
             }
         }
     },
 
     async removeUserAccess(email) {
-        if (window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('authorized_users').delete().eq('email', email);
-            if (!error) {
+        if (window.db) {
+            try {
+                const snapshot = await window.db.collection('authorized_users').where('email', '==', email).get();
+                const batch = window.db.batch();
+                snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
                 await this.loadAuthorizedUsers();
+            } catch (error) {
+                console.error(error);
             }
         }
     },

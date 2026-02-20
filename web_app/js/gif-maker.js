@@ -283,9 +283,14 @@ const gifMaker = {
                 previewContainer.innerHTML = `
                     <h4 style="color:var(--accent-color);">¡Animación Lista!</h4>
                     <img src="${gifData}" style="width:100%; border-radius:12px; margin-bottom:10px;">
-                    <button id="save-gif-btn" class="btn btn-primary btn-block" onclick="gifMaker.saveGifToCloud('${gifData}')">
-                        <i class="fas fa-cloud-upload-alt"></i> Guardar en Biblioteca
-                    </button>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <a href="${gifData}" download="${name.replace(/\s+/g, '_')}.gif" class="btn btn-secondary btn-block" style="text-decoration:none; text-align:center;">
+                            <i class="fas fa-download"></i> Descargar GIF
+                        </a>
+                        <button id="save-gif-btn" class="btn btn-primary btn-block" onclick="gifMaker.saveGifMetadata('${gifData}')">
+                            <i class="fas fa-save"></i> Guardar en Base de Datos
+                        </button>
+                    </div>
                 `;
             } else {
                 previewContainer.innerHTML = '<p style="color:red;">Error al generar.</p>';
@@ -293,42 +298,25 @@ const gifMaker = {
         });
     },
 
-    async saveGifToCloud(dataUrl) {
+    async saveGifMetadata(dataUrl) {
         const name = document.getElementById('gif-name').value;
         const btn = document.getElementById('save-gif-btn');
-        if (!window.supabaseClient) return;
+        if (!window.db) return;
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
         try {
-            // 1. Convertir Base64 a Blob (archivo real)
-            const blob = await fetch(dataUrl).then(res => res.blob());
-            const fileName = `gif_${Date.now()}.gif`;
+            const fileName = `${name.replace(/\s+/g, '_')}.gif`;
+            const githubPath = `images/tactical/${fileName}`;
 
-            // 2. Subir al Bucket de Supabase Storage
-            const { data: storageData, error: storageError } = await window.supabaseClient
-                .storage
-                .from('tactical_gifs')
-                .upload(fileName, blob, { contentType: 'image/gif' });
-
-            if (storageError) throw storageError;
-
-            // 3. Obtener la URL pública del archivo
-            const { data: { publicUrl } } = window.supabaseClient
-                .storage
-                .from('tactical_gifs')
-                .getPublicUrl(fileName);
-
-            // 4. Guardar SOLO el nombre y el LINK en la tabla tactical_gifs
-            const { error: dbError } = await window.supabaseClient.from('tactical_gifs').insert([{
+            await window.db.collection('tactical_gifs').add({
                 name: name,
-                gif_url: publicUrl
-            }]);
+                gif_url: githubPath,
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
-            if (dbError) throw dbError;
-
-            alert("¡GIF guardado y optimizado correctamente!");
+            alert("¡Referencia guardada! Recuerda descargar el GIF y subirlo a la carpeta 'images/tactical/' de tu GitHub.");
             this.resetGif();
             document.getElementById('gif-name').value = '';
 
@@ -337,7 +325,7 @@ const gifMaker = {
             alert("Error al guardar: " + err.message);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Guardar en Biblioteca';
+            btn.innerHTML = '<i class="fas fa-save"></i> Guardar en Base de Datos';
         }
     }
 };

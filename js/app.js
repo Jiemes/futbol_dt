@@ -136,7 +136,7 @@ const app = {
 
         birthdays.forEach(p => {
             const [y, m, d] = p.birthdate.split('-').map(Number);
-            const dateStr = `${todayYear}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`;
+            // No changes needed for logic, but confirming consistency
 
             icsContent += "BEGIN:VEVENT\n";
             icsContent += `SUMMARY:Cumpleaños ${p.alias}\n`;

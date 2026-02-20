@@ -5,7 +5,7 @@ const statsManager = {
     },
 
     async renderStats() {
-        if (!window.supabaseClient || !window.playersManager) return;
+        if (!window.db || !window.playersManager) return;
 
         const container = document.getElementById('stats-content');
         if (!container) return;
@@ -15,59 +15,64 @@ const statsManager = {
         const players = window.playersManager.players;
         const categories = ['1ra', 'Res', 'Sub17'];
 
-        // Fetch all attendance
-        const { data: allAtt } = await window.supabaseClient.from('attendance').select('*');
-        // Fetch all matches
-        const { data: allMatches } = await window.supabaseClient.from('matches').select('*');
-        // Fetch all training plans
-        const { count: totalPlans } = await window.supabaseClient.from('planning').select('*', { count: 'exact', head: true });
+        try {
+            // Fetch records from Firestore
+            const [attSnap, matchesSnap, plansSnap] = await Promise.all([
+                window.db.collection('attendance').get(),
+                window.db.collection('matches').get(),
+                window.db.collection('planning').get()
+            ]);
 
-        // Build Category Stats Array
-        const catStats = categories.map(cat => {
-            const catPlayers = players.filter(p => p.category === cat);
-            const playerIds = catPlayers.map(p => p.id);
+            const allAtt = attSnap.docs.map(doc => doc.data());
+            const allMatches = matchesSnap.docs.map(doc => doc.data());
+            const totalPlans = plansSnap.size;
 
-            // Attendance
-            const catAtt = (allAtt || []).filter(r => playerIds.includes(r.player_id));
-            const distinctDates = [...new Set(catAtt.map(r => r.training_date))];
-            const sessions = distinctDates.length;
-            const presence = catAtt.filter(r => r.present).length;
-            const avgAtt = (sessions > 0 && catPlayers.length > 0)
-                ? Math.round((presence / (sessions * catPlayers.length)) * 100)
-                : 0;
+            // Build Category Stats Array
+            const catStats = categories.map(cat => {
+                const catPlayers = players.filter(p => p.category === cat);
+                const playerIds = catPlayers.map(p => p.id);
 
-            // Matches
-            const catMatches = (allMatches || []).filter(m => m.category === cat && m.score_local !== null && m.score_rival !== null);
-            let gf = 0, ga = 0, pts = 0;
+                // Attendance
+                const catAtt = (allAtt || []).filter(r => playerIds.includes(r.player_id));
+                const distinctDates = [...new Set(catAtt.map(r => r.training_date))];
+                const sessions = distinctDates.length;
+                const presence = catAtt.filter(r => r.present).length;
+                const avgAtt = (sessions > 0 && catPlayers.length > 0)
+                    ? Math.round((presence / (sessions * catPlayers.length)) * 100)
+                    : 0;
 
-            catMatches.forEach(m => {
-                const isLocal = m.condition === 'Local';
-                const sLocal = parseInt(m.score_local);
-                const sRival = parseInt(m.score_rival);
+                // Matches
+                const catMatches = (allMatches || []).filter(m => m.category === cat && m.score_local !== null && m.score_rival !== null);
+                let gf = 0, ga = 0, pts = 0;
 
-                if (isLocal) {
-                    gf += sLocal; ga += sRival;
-                    if (sLocal > sRival) pts += 3;
-                    else if (sLocal === sRival) pts += 1;
-                } else {
-                    gf += sRival; ga += sLocal;
-                    if (sRival > sLocal) pts += 3;
-                    else if (sRival === sLocal) pts += 1;
-                }
+                catMatches.forEach(m => {
+                    const isLocal = m.condition === 'Local';
+                    const sLocal = parseInt(m.score_local);
+                    const sRival = parseInt(m.score_rival);
+
+                    if (isLocal) {
+                        gf += sLocal; ga += sRival;
+                        if (sLocal > sRival) pts += 3;
+                        else if (sLocal === sRival) pts += 1;
+                    } else {
+                        gf += sRival; ga += sLocal;
+                        if (sRival > sLocal) pts += 3;
+                        else if (sRival === sLocal) pts += 1;
+                    }
+                });
+
+                return {
+                    name: cat === '1ra' ? 'Primera' : (cat === 'Res' ? 'Reserva' : 'Sub 17'),
+                    count: catPlayers.length,
+                    avgAtt,
+                    sessions,
+                    played: catMatches.length,
+                    gf, ga, pts
+                };
             });
 
-            return {
-                name: cat === '1ra' ? 'Primera' : (cat === 'Res' ? 'Reserva' : 'Sub 17'),
-                count: catPlayers.length,
-                avgAtt,
-                sessions,
-                played: catMatches.length,
-                gf, ga, pts
-            };
-        });
-
-        // Overall stats top bar
-        let html = `
+            // Overall stats top bar
+            let html = `
             <div class="stats-overview" style="margin-bottom:30px;">
                 <div class="stat-box">
                     <span class="stat-number">${players.length}</span>
@@ -86,8 +91,8 @@ const statsManager = {
             <div class="stats-grid-categories" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
         `;
 
-        catStats.forEach(s => {
-            html += `
+            catStats.forEach(s => {
+                html += `
                 <div class="config-card" style="padding:20px;">
                     <h3 style="color:var(--accent-color); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
                         ${s.name}
@@ -123,10 +128,14 @@ const statsManager = {
                     </div>
                 </div>
             `;
-        });
+            });
 
-        html += `</div>`;
-        container.innerHTML = html;
+            html += `</div>`;
+            container.innerHTML = html;
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = '<p class="text-muted">Error al cargar estadísticas.</p>';
+        }
     }
 };
 

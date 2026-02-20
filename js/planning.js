@@ -13,22 +13,23 @@ const planningManager = {
     },
 
     async loadLibraryCache() {
-        if (!window.supabaseClient) return;
-        const { data } = await window.supabaseClient.from('exercises').select('*');
-        this.libraryExercises = data || [];
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('exercises').get();
+            this.libraryExercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error(error);
+        }
     },
 
     async loadPlans() {
-        if (!window.supabaseClient) return;
-        // Search & Sort DESC by date
-        const { data, error } = await window.supabaseClient
-            .from('planning')
-            .select('*')
-            .order('session_date', { ascending: false });
-
-        if (!error && data) {
-            this.plans = data;
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('planning').orderBy('session_date', 'desc').get();
+            this.plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             this.renderPlans();
+        } catch (error) {
+            console.error(error);
         }
     },
 
@@ -86,23 +87,23 @@ const planningManager = {
         const date = document.getElementById('plan-date').value;
         const content = document.getElementById('plan-content').value;
 
-        if (!title || !date || !window.supabaseClient) return;
+        if (!title || !date || !window.db) return;
 
-        const { error } = await window.supabaseClient.from('planning').insert([{
-            title: title,
-            session_date: date,
-            content: content,
-            exercise_ids: this.selectedExercises
-        }]);
-
-        if (!error) {
+        try {
+            await window.db.collection('planning').add({
+                title: title,
+                session_date: date,
+                content: content,
+                exercise_ids: this.selectedExercises
+            });
             await this.loadPlans();
             document.getElementById('add-plan-form').reset();
             this.selectedExercises = [];
             this.selectorSearch = '';
             document.getElementById('selector-search').value = '';
             this.renderMiniLibrarySelector();
-        } else {
+        } catch (error) {
+            console.error(error);
             alert("Error al guardar planificación.");
         }
     },
@@ -113,9 +114,13 @@ const planningManager = {
 
     async deletePlan(id, event) {
         if (event) event.stopPropagation();
-        if (confirm("¿Eliminar este plan?") && window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('planning').delete().eq('id', id);
-            if (!error) await this.loadPlans();
+        if (confirm("¿Eliminar este plan?") && window.db) {
+            try {
+                await window.db.collection('planning').doc(id).delete();
+                await this.loadPlans();
+            } catch (error) {
+                console.error(error);
+            }
         }
     },
 

@@ -259,9 +259,12 @@ const tacticBoard = {
         });
 
         // Draw players
+        const playerRadius = w * 0.05; // 5% del ancho
+        const fontSize = Math.max(10, w * 0.035);
+
         this.playersOnField.forEach(p => {
             this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+            this.ctx.arc(p.x, p.y, playerRadius, 0, Math.PI * 2);
             this.ctx.fillStyle = p.isOpponent ? '#2c3e50' : '#800020';
             this.ctx.fill();
             this.ctx.strokeStyle = 'white';
@@ -269,31 +272,47 @@ const tacticBoard = {
             this.ctx.stroke();
 
             this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 11px Outfit';
+            this.ctx.font = `bold ${fontSize}px Outfit`;
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(p.name || '?', p.x, p.y + 4);
+            this.ctx.fillText(p.name || '?', p.x, p.y + (fontSize / 3));
         });
     },
 
     drawField() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const margin = w * 0.05;
+
+        // Césped
         this.ctx.fillStyle = '#081a08';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(0, 0, w, h);
 
         this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
         this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(10, 10, this.canvas.width - 20, this.canvas.height - 20);
 
+        // Líneas perimetrales
+        this.ctx.strokeRect(margin, margin, w - (margin * 2), h - (margin * 2));
+
+        // Línea de medio campo
         this.ctx.beginPath();
-        this.ctx.moveTo(10, this.canvas.height / 2);
-        this.ctx.lineTo(this.canvas.width - 10, this.canvas.height / 2);
+        this.ctx.moveTo(margin, h / 2);
+        this.ctx.lineTo(w - margin, h / 2);
         this.ctx.stroke();
 
+        // Círculo central
         this.ctx.beginPath();
-        this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2, 40, 0, Math.PI * 2);
+        this.ctx.arc(w / 2, h / 2, w * 0.15, 0, Math.PI * 2);
         this.ctx.stroke();
 
-        this.ctx.strokeRect(this.canvas.width / 2 - 60, 10, 120, 50);
-        this.ctx.strokeRect(this.canvas.width / 2 - 60, this.canvas.height - 60, 120, 50);
+        // Áreas (proporcionales)
+        const areaW = w * 0.4;
+        const areaH = h * 0.12;
+
+        // Área superior
+        this.ctx.strokeRect(w / 2 - areaW / 2, margin, areaW, areaH);
+
+        // Área inferior
+        this.ctx.strokeRect(w / 2 - areaW / 2, h - margin - areaH, areaW, areaH);
     },
 
     undoDraw() {
@@ -313,7 +332,7 @@ const tacticBoard = {
         const date = document.getElementById('match-date').value;
         const subs = document.getElementById('substitutes-text').value;
 
-        if (!rival || !date || !window.supabaseClient) {
+        if (!rival || !date || !window.db) {
             alert("Completa Rival y Fecha por favor.");
             return;
         }
@@ -323,26 +342,31 @@ const tacticBoard = {
             drawings: this.drawings
         };
 
-        const { error } = await window.supabaseClient.from('formations').insert([{
-            name: rival,
-            formation_date: date,
-            positions_data: formationData,
-            substitutes_list: subs
-        }]);
-
-        if (!error) {
+        try {
+            await window.db.collection('formations').add({
+                name: rival,
+                formation_date: date,
+                positions_data: formationData,
+                substitutes_list: subs,
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
             alert("¡Estrategia guardada!");
             await this.loadFormationsList();
-        } else {
+        } catch (error) {
             console.error(error);
             alert("Error al guardar táctica.");
         }
     },
 
     async loadFormationsList() {
-        if (!window.supabaseClient) return;
-        const { data } = await window.supabaseClient.from('formations').select('*').order('formation_date', { ascending: false });
-        if (data) this.renderHistory(data);
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('formations').orderBy('formation_date', 'desc').get();
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            this.renderHistory(data);
+        } catch (error) {
+            console.error(error);
+        }
     },
 
     renderHistory(formations) {
@@ -360,21 +384,31 @@ const tacticBoard = {
     },
 
     async loadSpecific(id) {
-        const { data } = await window.supabaseClient.from('formations').select('*').eq('id', id).single();
-        if (data) {
-            document.getElementById('rival-name').value = data.name;
-            document.getElementById('match-date').value = data.formation_date;
-            this.playersOnField = data.positions_data.players || [];
-            this.drawings = data.positions_data.drawings || [];
-            this.render();
-            this.renderPlayerPool();
+        if (!window.db) return;
+        try {
+            const doc = await window.db.collection('formations').doc(id).get();
+            if (doc.exists) {
+                const data = doc.data();
+                document.getElementById('rival-name').value = data.name;
+                document.getElementById('match-date').value = data.formation_date;
+                this.playersOnField = data.positions_data.players || [];
+                this.drawings = data.positions_data.drawings || [];
+                this.render();
+                this.renderPlayerPool();
+            }
+        } catch (error) {
+            console.error(error);
         }
     },
 
     async deleteFormation(id) {
-        if (confirm("¿Borrar táctica?")) {
-            await window.supabaseClient.from('formations').delete().eq('id', id);
-            await this.loadFormationsList();
+        if (confirm("¿Borrar táctica?") && window.db) {
+            try {
+                await window.db.collection('formations').doc(id).delete();
+                await this.loadFormationsList();
+            } catch (error) {
+                console.error(error);
+            }
         }
     },
 

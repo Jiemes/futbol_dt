@@ -19,16 +19,17 @@ const playersManager = {
     },
 
     async loadPlayers() {
-        if (!window.supabaseClient) return;
-        const { data, error } = await window.supabaseClient.from('players').select('*').order('alias', { ascending: true });
-
-        if (!error && data) {
-            this.players = data;
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('players').orderBy('alias', 'asc').get();
+            this.players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             this.renderPlayersList();
 
             if (window.app && window.app.loadPlayers) window.app.loadPlayers();
             if (window.attendanceManager) window.attendanceManager.renderAttendanceList();
             if (window.statsManager) window.statsManager.renderStats();
+        } catch (error) {
+            console.error("Error cargando jugadoras:", error);
         }
     },
 
@@ -97,7 +98,7 @@ const playersManager = {
         const phone = document.getElementById('p-phone') ? document.getElementById('p-phone').value : null;
         const emergency = document.getElementById('p-emergency') ? document.getElementById('p-emergency').value : null;
 
-        if (!alias || !window.supabaseClient) return;
+        if (!alias || !window.db) return;
 
         const playerData = {
             alias: alias,
@@ -116,19 +117,17 @@ const playersManager = {
             photo_url: photo || null
         };
 
-        let result;
-        if (editId) {
-            result = await window.supabaseClient.from('players').update(playerData).eq('id', editId);
-        } else {
-            result = await window.supabaseClient.from('players').insert([playerData]);
-        }
-
-        if (!result.error) {
+        try {
+            if (editId) {
+                await window.db.collection('players').doc(editId).update(playerData);
+            } else {
+                await window.db.collection('players').add(playerData);
+            }
             await this.loadPlayers();
             this.resetForm();
             this.showAddModal(false);
-        } else {
-            console.error("Error Supabase:", result.error);
+        } catch (error) {
+            console.error(error);
             alert("Error al guardar jugadora.");
         }
     },
@@ -174,11 +173,13 @@ const playersManager = {
 
     async deletePlayer(id, e) {
         if (e) e.stopPropagation();
-        if (confirm("¿Estás seguro de eliminar a esta jugadora?") && window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('players').delete().eq('id', id);
-            if (!error) {
+        if (confirm("¿Estás seguro de eliminar a esta jugadora?") && window.db) {
+            try {
+                await window.db.collection('players').doc(id).delete();
                 await this.loadPlayers();
                 this.showDetailModal(false);
+            } catch (error) {
+                console.error(error);
             }
         }
     },
@@ -230,14 +231,18 @@ const playersManager = {
         const player = this.players.find(p => p.id === id);
         if (!player) return;
 
-        const { data: attData } = await window.supabaseClient
-            .from('attendance')
-            .select('*')
-            .eq('player_id', id);
+        let attendancePct = 0;
+        let presenceCount = 0;
 
-        const totalSessions = attData ? attData.length : 0;
-        const presenceCount = attData ? attData.filter(a => a.present).length : 0;
-        const attendancePct = totalSessions > 0 ? Math.round((presenceCount / totalSessions) * 100) : 0;
+        try {
+            const snapshot = await window.db.collection('attendance').where('player_id', '==', id).get();
+            const attData = snapshot.docs.map(doc => doc.data());
+            const totalSessions = attData.length;
+            presenceCount = attData.filter(a => a.present).length;
+            attendancePct = totalSessions > 0 ? Math.round((presenceCount / totalSessions) * 100) : 0;
+        } catch (error) {
+            console.error(error);
+        }
 
         const content = document.getElementById('player-detail-content');
         content.innerHTML = `
@@ -287,14 +292,24 @@ const playersManager = {
     },
 
     showAddModal(show) {
+        console.log("showAddModal llamada con:", show);
         const modal = document.getElementById('modal-player');
-        if (modal) {
-            if (show) modal.classList.add('active');
-            else {
-                modal.classList.remove('active');
-                this.resetForm();
-                this.cancelCrop();
-            }
+        if (!modal) {
+            console.error("Error: No se encontró el elemento con ID 'modal-player'");
+            alert("Error interno: El modal no existe en el HTML.");
+            return;
+        }
+        if (show) {
+            console.log("Activando modal...");
+            modal.classList.add('active');
+            // Forzar display por si falla el CSS
+            modal.style.display = 'flex';
+        } else {
+            console.log("Cerrando modal...");
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+            this.resetForm();
+            this.cancelCrop();
         }
     },
 

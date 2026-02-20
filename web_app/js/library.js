@@ -28,16 +28,13 @@ const libraryManager = {
     },
 
     async loadExercises() {
-        if (!window.supabaseClient) return;
-
-        const { data, error } = await window.supabaseClient
-            .from('exercises')
-            .select('*')
-            .order('title', { ascending: true });
-
-        if (!error && data) {
-            this.exercises = data;
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('exercises').orderBy('title').get();
+            this.exercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             this.renderExercises();
+        } catch (error) {
+            console.error(error);
         }
     },
 
@@ -47,20 +44,19 @@ const libraryManager = {
         const desc = document.getElementById('ex-desc').value;
         const gif = document.getElementById('ex-gif').value;
 
-        if (!title || !window.supabaseClient) return;
+        if (!title || !window.db) return;
 
-        const { error } = await window.supabaseClient.from('exercises').insert([{
-            title: title,
-            category: cat,
-            description: desc,
-            gif_url: gif
-        }]);
-
-        if (!error) {
+        try {
+            await window.db.collection('exercises').add({
+                title: title,
+                category: cat,
+                description: desc,
+                gif_url: gif
+            });
             await this.loadExercises();
             document.getElementById('add-exercise-form').reset();
             this.showAddModal(false);
-        } else {
+        } catch (error) {
             console.error(error);
             alert("Error al guardar el ejercicio.");
         }
@@ -68,9 +64,13 @@ const libraryManager = {
 
     async deleteExercise(id, e) {
         if (e) e.stopPropagation();
-        if (confirm("¿Eliminar este ejercicio de la biblioteca?") && window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('exercises').delete().eq('id', id);
-            if (!error) await this.loadExercises();
+        if (confirm("¿Eliminar este ejercicio de la biblioteca?") && window.db) {
+            try {
+                await window.db.collection('exercises').doc(id).delete();
+                await this.loadExercises();
+            } catch (error) {
+                console.error(error);
+            }
         }
     },
 
@@ -153,16 +153,17 @@ const libraryManager = {
 
     async loadGifGallery() {
         const grid = document.getElementById('gif-gallery-grid');
-        if (!grid || !window.supabaseClient) return;
+        if (!grid || !window.db) return;
 
         grid.innerHTML = '<p class="text-muted">Cargando galería...</p>';
 
-        const { data, error } = await window.supabaseClient.from('tactical_gifs').select('*').order('created_at', { ascending: false });
+        try {
+            const snapshot = await window.db.collection('tactical_gifs').orderBy('created_at', 'desc').get();
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (!error && data) {
             grid.innerHTML = '';
             if (data.length === 0) {
-                grid.innerHTML = '<p class="text-muted">No has creado GIFs todavía en el Creador de GIFs.</p>';
+                grid.innerHTML = '<p class="text-muted">No has creado GIFs todavía.</p>';
                 return;
             }
 
@@ -171,10 +172,11 @@ const libraryManager = {
                 item.className = 'config-card';
                 item.style.padding = '10px';
                 item.style.cursor = 'pointer';
+                const dateStr = gif.created_at ? (gif.created_at.toDate ? gif.created_at.toDate().toLocaleDateString() : new Date(gif.created_at).toLocaleDateString()) : '-';
                 item.innerHTML = `
                     <img src="${gif.gif_url}" style="width:100%; border-radius:8px; height:120px; object-fit:cover; margin-bottom:10px;">
                     <div style="font-size:0.85rem; font-weight:bold; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${gif.name}</div>
-                    <div style="font-size:0.7rem; color:var(--text-muted);">${new Date(gif.created_at).toLocaleDateString()}</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${dateStr}</div>
                 `;
                 item.onclick = () => {
                     document.getElementById('ex-gif').value = gif.gif_url;
@@ -182,6 +184,8 @@ const libraryManager = {
                 };
                 grid.appendChild(item);
             });
+        } catch (error) {
+            console.error(error);
         }
     },
 

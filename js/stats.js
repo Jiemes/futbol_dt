@@ -5,7 +5,7 @@ const statsManager = {
     },
 
     async renderStats() {
-        if (!window.supabaseClient || !window.playersManager) return;
+        if (!window.db || !window.playersManager) return;
 
         const container = document.getElementById('stats-content');
         if (!container) return;
@@ -16,11 +16,16 @@ const statsManager = {
         const categories = ['1ra', 'Res', 'Sub17'];
 
         // Fetch all attendance
-        const { data: allAtt } = await window.supabaseClient.from('attendance').select('*');
+        const attSnapshot = await window.db.collection('attendance').get();
+        const allAtt = attSnapshot.docs.map(doc => doc.data());
+
         // Fetch all matches
-        const { data: allMatches } = await window.supabaseClient.from('matches').select('*');
+        const matchesSnapshot = await window.db.collection('matches').get();
+        const allMatches = matchesSnapshot.docs.map(doc => doc.data());
+
         // Fetch all training plans
-        const { count: totalPlans } = await window.supabaseClient.from('planning').select('*', { count: 'exact', head: true });
+        const plansSnapshot = await window.db.collection('planning').get();
+        const totalPlans = plansSnapshot.size;
 
         // Build Category Stats Array
         const catStats = categories.map(cat => {

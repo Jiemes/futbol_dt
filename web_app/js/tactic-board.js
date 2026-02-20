@@ -313,7 +313,7 @@ const tacticBoard = {
         const date = document.getElementById('match-date').value;
         const subs = document.getElementById('substitutes-text').value;
 
-        if (!rival || !date || !window.supabaseClient) {
+        if (!rival || !date || !window.db) {
             alert("Completa Rival y Fecha por favor.");
             return;
         }
@@ -323,26 +323,31 @@ const tacticBoard = {
             drawings: this.drawings
         };
 
-        const { error } = await window.supabaseClient.from('formations').insert([{
-            name: rival,
-            formation_date: date,
-            positions_data: formationData,
-            substitutes_list: subs
-        }]);
-
-        if (!error) {
+        try {
+            await window.db.collection('formations').add({
+                name: rival,
+                formation_date: date,
+                positions_data: formationData,
+                substitutes_list: subs,
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
             alert("¡Estrategia guardada!");
             await this.loadFormationsList();
-        } else {
+        } catch (error) {
             console.error(error);
             alert("Error al guardar táctica.");
         }
     },
 
     async loadFormationsList() {
-        if (!window.supabaseClient) return;
-        const { data } = await window.supabaseClient.from('formations').select('*').order('formation_date', { ascending: false });
-        if (data) this.renderHistory(data);
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('formations').orderBy('formation_date', 'desc').get();
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            this.renderHistory(data);
+        } catch (error) {
+            console.error(error);
+        }
     },
 
     renderHistory(formations) {
@@ -360,21 +365,31 @@ const tacticBoard = {
     },
 
     async loadSpecific(id) {
-        const { data } = await window.supabaseClient.from('formations').select('*').eq('id', id).single();
-        if (data) {
-            document.getElementById('rival-name').value = data.name;
-            document.getElementById('match-date').value = data.formation_date;
-            this.playersOnField = data.positions_data.players || [];
-            this.drawings = data.positions_data.drawings || [];
-            this.render();
-            this.renderPlayerPool();
+        if (!window.db) return;
+        try {
+            const doc = await window.db.collection('formations').doc(id).get();
+            if (doc.exists) {
+                const data = doc.data();
+                document.getElementById('rival-name').value = data.name;
+                document.getElementById('match-date').value = data.formation_date;
+                this.playersOnField = data.positions_data.players || [];
+                this.drawings = data.positions_data.drawings || [];
+                this.render();
+                this.renderPlayerPool();
+            }
+        } catch (error) {
+            console.error(error);
         }
     },
 
     async deleteFormation(id) {
-        if (confirm("¿Borrar táctica?")) {
-            await window.supabaseClient.from('formations').delete().eq('id', id);
-            await this.loadFormationsList();
+        if (confirm("¿Borrar táctica?") && window.db) {
+            try {
+                await window.db.collection('formations').doc(id).delete();
+                await this.loadFormationsList();
+            } catch (error) {
+                console.error(error);
+            }
         }
     },
 

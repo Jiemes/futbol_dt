@@ -22,17 +22,15 @@ const matchesManager = {
     },
 
     async loadMatches() {
-        if (!window.supabaseClient) return;
-        const { data, error } = await window.supabaseClient
-            .from('matches')
-            .select('*')
-            .order('date', { ascending: true });
-
-        if (!error && data) {
-            this.matches = data;
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('matches').orderBy('date').get();
+            this.matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             this.renderMatches();
             this.renderStandings();
             this.updateHomeMatches();
+        } catch (error) {
+            console.error("Error cargando partidos:", error);
         }
     },
 
@@ -55,19 +53,17 @@ const matchesManager = {
             observations: document.getElementById('m-observations').value || ''
         };
 
-        let result;
-        if (id) {
-            result = await window.supabaseClient.from('matches').update(matchData).eq('id', id);
-        } else {
-            result = await window.supabaseClient.from('matches').insert([matchData]);
-        }
-
-        if (!result.error) {
+        try {
+            if (id) {
+                await window.db.collection('matches').doc(id).update(matchData);
+            } else {
+                await window.db.collection('matches').add(matchData);
+            }
             await this.loadMatches();
             this.showAddModal(false);
-        } else {
-            console.error(result.error);
-            alert("Error al guardar partido. Asegúrate de actualizar la tabla en Supabase.");
+        } catch (error) {
+            console.error("Error al guardar partido:", error);
+            alert("Error al guardar partido.");
         }
     },
 
@@ -237,9 +233,13 @@ const matchesManager = {
     },
 
     async deleteMatch(id) {
-        if (confirm("¿Eliminar este partido del calendario?") && window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('matches').delete().eq('id', id);
-            if (!error) this.loadMatches();
+        if (confirm("¿Eliminar este partido del calendario?") && window.db) {
+            try {
+                await window.db.collection('matches').doc(id).delete();
+                await this.loadMatches();
+            } catch (error) {
+                console.error("Error al eliminar partido:", error);
+            }
         }
     },
 

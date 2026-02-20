@@ -273,124 +273,6 @@
                 <!-- Player cards dynamically loaded -->
             </div>
 
-            <!-- Modal: Agregar Jugadora -->
-            <div id="modal-player" class="modal-overlay">
-                <div class="modal-card">
-                    <h2 id="player-modal-title">Nueva Jugadora</h2>
-                    <form id="add-player-form">
-                        <input type="hidden" id="p-edit-id">
-                        <div class="form-grid">
-                            <div class="input-group" style="grid-column: 1/-1;">
-                                <label>Foto de la Jugadora</label>
-                                <div id="cropper-wrapper" style="display:none; margin-bottom: 20px;">
-                                    <div style="max-height: 400px; overflow: hidden;">
-                                        <img id="cropper-image" src="" style="max-width: 100%;">
-                                    </div>
-                                    <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
-                                        <button type="button" class="btn btn-primary"
-                                            onclick="playersManager.applyCrop()">Recortar Cara</button>
-                                        <button type="button" class="btn btn-secondary"
-                                            onclick="playersManager.cancelCrop()">Cancelar</button>
-                                    </div>
-                                </div>
-                                <div class="photo-preview-container" id="p-photo-container"
-                                    onclick="document.getElementById('p-photo').click()">
-                                    <img id="p-photo-preview" src="images/camiseta.png" alt="Preview">
-                                    <i class="fas fa-camera" id="camera-icon"
-                                        style="position: absolute; color: white; opacity: 0.7;"></i>
-                                </div>
-                                <input type="file" id="p-photo" class="player-photo-input" accept="image/*"
-                                    style="display:none" onchange="playersManager.handlePhotoSelection(this)">
-                                <input type="hidden" id="p-photo-url">
-                            </div>
-                            <div class="input-group">
-                                <label>Alias (En camiseta)</label>
-                                <input type="text" id="p-alias" placeholder="Ej: Ana P." required>
-                            </div>
-                            <div class="input-group">
-                                <label>Nombre Completo</label>
-                                <input type="text" id="p-name" placeholder="Nombre y Apellido">
-                            </div>
-                            <div class="input-group">
-                                <label>DNI / Documento</label>
-                                <input type="text" id="p-dni" placeholder="Sin puntos">
-                            </div>
-                            <div class="input-group">
-                                <label>Fecha de Nacimiento</label>
-                                <input type="date" id="p-birthdate">
-                            </div>
-                            <div class="input-group">
-                                <label>Categoría</label>
-                                <select id="p-cat">
-                                    <option value="1ra">Primera Division</option>
-                                    <option value="Res">Reserva</option>
-                                    <option value="Sub17">Sub 17</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <label>Posición Principal</label>
-                                <select id="p-pos1">
-                                    <option value="Arquera">Arquera</option>
-                                    <option value="Defensora Central">Defensora Central</option>
-                                    <option value="Lateral">Lateral</option>
-                                    <option value="Mediocampista Central">Mediocampista Central</option>
-                                    <option value="Mediocampista Ofensiva">Mediocampista Ofensiva</option>
-                                    <option value="Volante">Volante</option>
-                                    <option value="Delantera">Delantera</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <label>Segunda Posición</label>
-                                <select id="p-pos2">
-                                    <option value="-">-</option>
-                                    <option value="Arquera">Arquera</option>
-                                    <option value="Defensora Central">Defensora Central</option>
-                                    <option value="Lateral">Lateral</option>
-                                    <option value="Mediocampista Central">Mediocampista Central</option>
-                                    <option value="Mediocampista Ofensiva">Mediocampista Ofensiva</option>
-                                    <option value="Volante">Volante</option>
-                                    <option value="Delantera">Delantera</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <label>Peso (kg)</label>
-                                <input type="number" id="p-weight" placeholder="0">
-                            </div>
-                            <div class="input-group">
-                                <label>Altura (cm)</label>
-                                <input type="number" id="p-height" placeholder="0">
-                            </div>
-                            <div class="input-group">
-                                <label>Apto Físico</label>
-                                <select id="p-apto">
-                                    <option value="Apto">Apto</option>
-                                    <option value="Lesionada">Lesionada</option>
-                                    <option value="En Recuperación">En Recuperación</option>
-                                    <option value="No Apto">No Apto</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <label>Obra Social / Prepaga</label>
-                                <input type="text" id="p-insurance" placeholder="Nombre de la obra social">
-                            </div>
-                            <div class="input-group">
-                                <label>Teléfono Jugadora</label>
-                                <input type="tel" id="p-phone" placeholder="Ej: 1122334455">
-                            </div>
-                            <div class="input-group">
-                                <label>Contacto Emergencia</label>
-                                <input type="tel" id="p-emergency" placeholder="Nombre y Teléfono">
-                            </div>
-                        </div>
-                        <div class="modal-actions">
-                            <button type="button" class="btn btn-secondary"
-                                onclick="playersManager.showAddModal(false)">Cancelar</button>
-                            <button type="submit" id="player-submit-btn" class="btn btn-primary">Guardar
-                                Jugadora</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         </section>
         <section id="screen-attendance" class="screen">
             <header class="screen-header">
@@ -404,6 +286,11 @@
                     </div>
                     <button class="btn btn-secondary" onclick="attendanceManager.toggleAll(true)">
                         <i class="fas fa-check-double"></i> Todas Presentes
+                    </button>
+                    <button id="btn-delete-attendance" class="btn btn-secondary"
+                        style="display: none; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.2);"
+                        onclick="attendanceManager.deleteSession(attendanceManager.currentDate)">
+                        <i class="fas fa-trash-alt"></i> Borrar Sesión
                     </button>
                     <button class="btn btn-primary" onclick="attendanceManager.saveAll()">
                         <i class="fas fa-save"></i> Guardar Todo
@@ -689,8 +576,131 @@
         </section>
     </main>
 
-    <!-- Supabase Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Firebase SDK (Compat Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+
+    <!-- Modal: Agregar Jugadora (Global) -->
+    <div id="modal-player" class="modal-overlay">
+        <div class="modal-card">
+            <h2 id="player-modal-title">Nueva Jugadora</h2>
+            <form id="add-player-form" onsubmit="event.preventDefault(); playersManager.savePlayer()">
+                <input type="hidden" id="p-edit-id">
+                <div class="form-grid">
+                    <div class="input-group" style="grid-column: 1/-1;">
+                        <label>Foto de la Jugadora</label>
+                        <div id="cropper-wrapper" style="display:none; margin-bottom: 20px;">
+                            <div style="max-height: 400px; overflow: hidden;">
+                                <img id="cropper-image" src="" style="max-width: 100%;">
+                            </div>
+                            <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+                                <button type="button" class="btn btn-primary"
+                                    onclick="playersManager.applyCrop()">Recortar Cara</button>
+                                <button type="button" class="btn btn-secondary"
+                                    onclick="playersManager.cancelCrop()">Cancelar</button>
+                            </div>
+                        </div>
+                        <div class="photo-preview-container" id="p-photo-container">
+                            <img id="p-photo-preview" src="images/camiseta.png" alt="Preview">
+                        </div>
+                        <div class="input-group" style="margin-top: 10px;">
+                            <label>URL o Ruta de Foto (GitHub)</label>
+                            <input type="text" id="p-photo-url" placeholder="Ej: images/players/foto.png"
+                                onchange="document.getElementById('p-photo-preview').src = this.value || 'images/camiseta.png'">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Alias (En camiseta)</label>
+                        <input type="text" id="p-alias" placeholder="Ej: Ana P." required>
+                    </div>
+                    <div class="input-group">
+                        <label>Nombre Completo</label>
+                        <input type="text" id="p-name" placeholder="Nombre y Apellido">
+                    </div>
+                    <div class="input-group">
+                        <label>DNI / Documento</label>
+                        <input type="text" id="p-dni" placeholder="Sin puntos">
+                    </div>
+                    <div class="input-group">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" id="p-birthdate">
+                    </div>
+                    <div class="input-group">
+                        <label>Categoría</label>
+                        <select id="p-cat">
+                            <option value="1ra">Primera Division</option>
+                            <option value="Res">Reserva</option>
+                            <option value="Sub17">Sub 17</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Posición Principal</label>
+                        <select id="p-pos1">
+                            <option value="Arquera">Arquera</option>
+                            <option value="Defensora Central">Defensora Central</option>
+                            <option value="Lateral">Lateral</option>
+                            <option value="Mediocampista Central">Mediocampista Central</option>
+                            <option value="Mediocampiva Ofensiva">Mediocampista Ofensiva</option>
+                            <option value="Volante">Volante</option>
+                            <option value="Delantera">Delantera</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Segunda Posición</label>
+                        <select id="p-pos2">
+                            <option value="-">-</option>
+                            <option value="Arquera">Arquera</option>
+                            <option value="Defensora Central">Defensora Central</option>
+                            <option value="Lateral">Lateral</option>
+                            <option value="Mediocampista Central">Mediocampista Central</option>
+                            <option value="Mediocampista Ofensiva">Mediocampista Ofensiva</option>
+                            <option value="Volante">Volante</option>
+                            <option value="Delantera">Delantera</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Peso (kg)</label>
+                        <input type="number" id="p-weight" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Altura (cm)</label>
+                        <input type="number" id="p-height" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Apto Físico</label>
+                        <select id="p-apto">
+                            <option value="Apto">Apto</option>
+                            <option value="Lesionada">Lesionada</option>
+                            <option value="En Recuperación">En Recuperación</option>
+                            <option value="No Apto">No Apto</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Obra Social / Prepaga</label>
+                        <input type="text" id="p-insurance" placeholder="Nombre de la obra social">
+                    </div>
+                    <div class="input-group">
+                        <label>Teléfono Jugadora</label>
+                        <input type="tel" id="p-phone" placeholder="Ej: 1122334455">
+                    </div>
+                    <div class="input-group">
+                        <label>Contacto Emergencia</label>
+                        <input type="tel" id="p-emergency" placeholder="Nombre y Teléfono">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="playersManager.showAddModal(false)">Cancelar</button>
+                    <button type="submit" id="player-submit-btn" class="btn btn-primary">Guardar
+                        Jugadora</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="js/firebase-config.js"></script>
 
     <!-- GIF Generation Library -->
     <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script>

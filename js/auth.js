@@ -1,23 +1,16 @@
-// Configuración de Supabase
-const SUPABASE_URL = 'https://jpsqjyxrrilfesgfivoo.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_z2vaIDgKV3ZrMsqpAz-0-A_qmoUsCs8';
-
-// Inicializar el cliente de Supabase
-window.supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-
+// Inicializar el sistema de autenticación con Firebase
 window.auth = {
     currentUser: null,
     ownerEmail: 'perrolocosanchez@live.com',
     authorizedUsers: [],
 
     async init() {
-        console.log("Iniciando sistema de autenticación...");
+        console.log("Iniciando sistema de autenticación con Firebase...");
         this.addEventListeners();
         await this.checkSession();
     },
 
     addEventListeners() {
-        // Mobile Toggle logic
         const toggleBtn = document.getElementById('mobile-toggle');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
@@ -45,7 +38,6 @@ window.auth = {
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                console.log("Formulario de login enviado...");
                 const email = document.getElementById('login-email').value;
                 const password = document.getElementById('login-password').value;
                 await this.login(email, password);
@@ -57,7 +49,6 @@ window.auth = {
         const savedUser = localStorage.getItem('palometas_session');
         if (savedUser) {
             this.currentUser = JSON.parse(savedUser);
-            console.log("Sesión recuperada:", this.currentUser.email);
             if (this.currentUser.isOwner) {
                 await this.loadAuthorizedUsers();
             }
@@ -66,42 +57,37 @@ window.auth = {
     },
 
     async loadAuthorizedUsers() {
-        if (!window.supabaseClient) return;
-        const { data, error } = await window.supabaseClient.from('authorized_users').select('email');
-        if (!error && data) {
-            this.authorizedUsers = data.map(u => u.email.toLowerCase());
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('authorized_users').get();
+            this.authorizedUsers = snapshot.docs.map(doc => doc.data().email.toLowerCase());
             this.renderUserList();
+        } catch (error) {
+            console.error("Error cargando usuarios autorizados:", error);
         }
     },
 
     async login(email, password) {
         const authorizedPassword = 'palometas';
         const lowerEmail = email.toLowerCase().trim();
-
-        console.log("Intentando login para:", lowerEmail);
-
-        // Verificar si es dueño
         const isOwner = lowerEmail === this.ownerEmail.toLowerCase();
 
         let isAuthorized = isOwner;
-        if (!isOwner && window.supabaseClient) {
-            const { data, error } = await window.supabaseClient.from('authorized_users').select('email').eq('email', lowerEmail).single();
-            if (data && !error) isAuthorized = true;
+        if (!isOwner && window.db) {
+            const snapshot = await window.db.collection('authorized_users').where('email', '==', lowerEmail).get();
+            if (!snapshot.empty) isAuthorized = true;
         }
 
         if (isAuthorized && password === authorizedPassword) {
-            console.log("Login exitoso. Configurando sesión...");
             this.currentUser = {
                 email: lowerEmail,
                 name: isOwner ? 'Director Técnico' : 'Cuerpo Técnico',
                 isOwner: isOwner
             };
             localStorage.setItem('palometas_session', JSON.stringify(this.currentUser));
-
             if (isOwner) await this.loadAuthorizedUsers();
             this.onLoginSuccess();
         } else {
-            console.error("Login fallido: Credenciales incorrectas");
             alert("Acceso denegado. Credenciales incorrectas.");
         }
     },
@@ -113,13 +99,10 @@ window.auth = {
     },
 
     onLoginSuccess() {
-        console.log("Ejecutando onLoginSuccess...");
         const overlay = document.getElementById('login-overlay');
         if (overlay) {
             overlay.classList.remove('active');
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 300);
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
         }
 
         const configNav = document.getElementById('nav-config');
@@ -127,40 +110,36 @@ window.auth = {
             configNav.style.display = this.currentUser.isOwner ? 'flex' : 'none';
         }
 
-        if (this.currentUser.isOwner) {
-            this.renderUserList();
-        }
+        if (this.currentUser.isOwner) this.renderUserList();
 
-        // Actualizar otros manager si están cargados
         if (window.playersManager) window.playersManager.loadPlayers();
         if (window.attendanceManager) window.attendanceManager.loadRecords();
         if (window.planningManager) window.planningManager.loadPlans();
         if (window.statsManager) window.statsManager.renderStats();
-
-        console.log("Dashboard desbloqueado para:", this.currentUser.email);
     },
 
     async addUserAccess() {
         const input = document.getElementById('new-user-email');
         const email = input.value.trim().toLowerCase();
 
-        if (email && email !== this.ownerEmail && window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('authorized_users').insert([{ email: email }]);
-            if (!error) {
+        if (email && email !== this.ownerEmail && window.db) {
+            try {
+                await window.db.collection('authorized_users').add({ email: email });
                 input.value = '';
                 await this.loadAuthorizedUsers();
-            } else {
-                alert("Error: El mail ya existe o es inválido.");
+            } catch (error) {
+                alert("Error: No se pudo agregar el usuario.");
             }
         }
     },
 
     async removeUserAccess(email) {
-        if (window.supabaseClient) {
-            const { error } = await window.supabaseClient.from('authorized_users').delete().eq('email', email);
-            if (!error) {
-                await this.loadAuthorizedUsers();
-            }
+        if (window.db) {
+            const snapshot = await window.db.collection('authorized_users').where('email', '==', email).get();
+            const batch = window.db.batch();
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            await this.loadAuthorizedUsers();
         }
     },
 
@@ -184,5 +163,4 @@ window.auth = {
     }
 };
 
-// Iniciar aplicación
 window.addEventListener('DOMContentLoaded', () => auth.init());

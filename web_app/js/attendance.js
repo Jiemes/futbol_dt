@@ -19,19 +19,14 @@ const attendanceManager = {
     },
 
     async loadHistory() {
-        if (!window.supabaseClient) return;
-
-        // Obtener fechas únicas que tienen asistencia grabada
-        const { data, error } = await window.supabaseClient
-            .from('attendance')
-            .select('training_date')
-            .order('training_date', { ascending: false });
-
-        if (!error && data) {
-            // Filtrar fechas únicas
-            const uniqueDates = [...new Set(data.map(item => item.training_date))];
+        if (!window.db) return;
+        try {
+            const snapshot = await window.db.collection('attendance').orderBy('training_date', 'desc').get();
+            const uniqueDates = [...new Set(snapshot.docs.map(doc => doc.data().training_date))];
             this.history = uniqueDates;
             this.renderHistory();
+        } catch (error) {
+            console.error("Error cargando historial:", error);
         }
     },
 
@@ -50,18 +45,49 @@ const attendanceManager = {
 
             return `
                 <div class="mini-ex-item" 
-                     style="cursor:pointer; margin-bottom:10px; border-left: 3px solid ${isActive ? 'var(--primary-color)' : 'transparent'}; background: ${isActive ? 'rgba(74, 158, 255, 0.1)' : 'rgba(255,255,255,0.03)'}"
-                     onclick="attendanceManager.setDate('${dateStr}')">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="color:${isActive ? 'var(--primary-color)' : 'white'}">${date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>
-                            <br><small style="opacity:0.6">${dateStr}</small>
-                        </div>
-                        <i class="fas fa-chevron-right" style="opacity:0.3"></i>
+                     style="margin-bottom:10px; border-left: 3px solid ${isActive ? 'var(--primary-color)' : 'transparent'}; background: ${isActive ? 'rgba(74, 158, 255, 0.1)' : 'rgba(255,255,255,0.03)'}; display:flex; justify-content:space-between; align-items:center; padding: 10px; border-radius: 8px;">
+                    <div style="cursor:pointer; flex: 1;" onclick="attendanceManager.setDate('${dateStr}')">
+                        <strong style="color:${isActive ? 'var(--primary-color)' : 'white'}">${date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>
+                        <br><small style="opacity:0.6">${dateStr}</small>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="event.stopPropagation(); attendanceManager.deleteSession('${dateStr}')" title="Borrar esta sesión" 
+                                style="background:rgba(231, 76, 60, 0.1); border:none; color:#e74c3c; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition: all 0.2s;">
+                            <i class="fas fa-trash-alt" style="font-size: 0.85rem;"></i>
+                        </button>
                     </div>
                 </div>
             `;
         }).join('');
+    },
+
+    async deleteSession(dateStr) {
+        if (!window.db) return;
+        if (!confirm(`¿Estás seguro de que deseas borrar todos los registros del día ${dateStr}? Esta acción no se puede deshacer.`)) return;
+
+        try {
+            const snapshot = await window.db.collection('attendance').where('training_date', '==', dateStr).get();
+            if (snapshot.empty) {
+                alert("No se encontraron registros para borrar.");
+                return;
+            }
+
+            const batch = window.db.batch();
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+
+            alert(`Registros del día ${dateStr} borrados correctamente.`);
+
+            // Si borramos el día que estamos viendo, recargar para mostrar que es nuevo
+            if (dateStr === this.currentDate) {
+                await this.loadRecords();
+            }
+            await this.loadHistory();
+            if (window.app) window.app.updateDashboard();
+        } catch (error) {
+            console.error("Error al borrar sesión:", error);
+            alert("Error al intentar borrar los registros.");
+        }
     },
 
     setDate(dateStr) {
@@ -73,36 +99,38 @@ const attendanceManager = {
     },
 
     async loadRecords() {
-        if (!window.supabaseClient) return;
+        if (!window.db) return;
 
-        const { data, error } = await window.supabaseClient
-            .from('attendance')
-            .select('*')
-            .eq('training_date', this.currentDate);
+        try {
+            const snapshot = await window.db.collection('attendance').where('training_date', '==', this.currentDate).get();
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const players = window.playersManager ? window.playersManager.players : [];
-        this.playersStates = {};
+            const players = window.playersManager ? window.playersManager.players : [];
+            this.playersStates = {};
 
-        const banner = document.getElementById('attendance-status-banner');
+            const banner = document.getElementById('attendance-status-banner');
 
-        if (!error && data && data.length > 0) {
-            this.isNewRecord = false;
-            if (banner) banner.innerHTML = `<div class="badge" style="background:#2ecc71; padding:8px 15px; border-radius:30px;"><i class="fas fa-check-circle"></i> Asistencia Registrada</div>`;
+            if (data.length > 0) {
+                this.isNewRecord = false;
+                this.updateStatusBanner(false);
 
-            players.forEach(p => {
-                const record = data.find(r => r.player_id === p.id);
-                this.playersStates[p.id] = record ? record.present : false;
-            });
-        } else {
-            this.isNewRecord = true;
-            if (banner) banner.innerHTML = `<div class="badge" style="background:var(--accent-color); padding:8px 15px; border-radius:30px;"><i class="fas fa-info-circle"></i> Nuevo Registro (Default: Todas Presentes)</div>`;
+                players.forEach(p => {
+                    const record = data.find(r => r.player_id === p.id);
+                    this.playersStates[p.id] = record ? record.present : false;
+                });
+            } else {
+                this.isNewRecord = true;
+                this.updateStatusBanner(true);
 
-            players.forEach(p => {
-                this.playersStates[p.id] = true;
-            });
+                players.forEach(p => {
+                    this.playersStates[p.id] = true;
+                });
+            }
+
+            this.renderAttendanceList();
+        } catch (error) {
+            console.error("Error cargando asistencia:", error);
         }
-
-        this.renderAttendanceList();
     },
 
     renderAttendanceList() {
@@ -170,7 +198,7 @@ const attendanceManager = {
     },
 
     async saveAll() {
-        if (!window.supabaseClient) return;
+        if (!window.db) return;
 
         const players = window.playersManager ? window.playersManager.players : [];
         const records = players.map(p => ({
@@ -179,27 +207,42 @@ const attendanceManager = {
             present: this.playersStates[p.id] || false
         }));
 
-        const { error: delError } = await window.supabaseClient
-            .from('attendance')
-            .delete()
-            .eq('training_date', this.currentDate);
+        try {
+            // Borrar antiguos
+            const snapshot = await window.db.collection('attendance').where('training_date', '==', this.currentDate).get();
+            const batch = window.db.batch();
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
 
-        if (delError) {
-            console.error("Error al limpiar registros previos:", delError);
-        }
+            // Insertar nuevos
+            const nextBatch = window.db.batch();
+            records.forEach(rec => {
+                const ref = window.db.collection('attendance').doc();
+                nextBatch.set(ref, rec);
+            });
+            await nextBatch.commit();
 
-        const { error } = await window.supabaseClient
-            .from('attendance')
-            .insert(records);
-
-        if (!error) {
             alert(`Asistencia del día ${this.currentDate} guardada correctamente.`);
             await this.loadHistory();
             await this.loadRecords();
             if (window.app) window.app.updateDashboard();
-        } else {
+        } catch (error) {
             console.error(error);
             alert("Error al guardar la asistencia.");
+        }
+    },
+
+    async updateStatusBanner(isNew) {
+        const banner = document.getElementById('attendance-status-banner');
+        const deleteBtn = document.getElementById('btn-delete-attendance');
+        if (!banner) return;
+
+        if (isNew) {
+            banner.innerHTML = `<div class="badge" style="background:var(--accent-color); padding:8px 15px; border-radius:30px;"><i class="fas fa-info-circle"></i> Nuevo Registro (Default: Todas Presentes)</div>`;
+            if (deleteBtn) deleteBtn.style.display = 'none';
+        } else {
+            banner.innerHTML = `<div class="badge" style="background:#2ecc71; padding:8px 15px; border-radius:30px;"><i class="fas fa-check-circle"></i> Asistencia Registrada</div>`;
+            if (deleteBtn) deleteBtn.style.display = 'inline-flex';
         }
     }
 };
