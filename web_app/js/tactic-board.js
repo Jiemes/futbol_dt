@@ -9,6 +9,7 @@ const tacticBoard = {
     startY: 0,
     selectedPlayer: null,
     currentFilter: '1ra',
+    lastPlacedPlayer: null, // For mobile placement fallback
 
     async init() {
         this.canvas = document.getElementById('tactic-canvas');
@@ -31,35 +32,62 @@ const tacticBoard = {
     },
 
     addEventListeners() {
-        this.canvas.replaceWith(this.canvas.cloneNode(true));
-        this.canvas = document.getElementById('tactic-canvas');
+        if (!this._initialized) {
+            this.canvas.replaceWith(this.canvas.cloneNode(true));
+            this.canvas = document.getElementById('tactic-canvas');
+            this._initialized = true;
+
+            // GLOBAL KEYBOARD SHORTCUTS
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (this.selectedPlayer) {
+                        this.removePlayer(this.selectedPlayer);
+                    }
+                }
+            });
+        }
+
         this.ctx = this.canvas.getContext('2d');
 
-        this.canvas.addEventListener('dragover', (e) => e.preventDefault());
-        this.canvas.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            const x = (e.clientX - rect.left) * scaleX;
-            const y = (e.clientY - rect.top) * scaleY;
+        // Mouse Events
+        this.canvas.addEventListener('mousedown', (e) => this.handleDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.handleUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.handleUp(e));
 
-            this.playersOnField.push({
-                id: data.id,
-                name: data.name,
-                x: x,
-                y: y,
-                isOpponent: false
-            });
-            this.render();
-            this.renderPlayerPool();
+        // Touch Events
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.handleDown(e.touches[0]);
+        }, { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            this.handleMove(e.touches[0]);
+        }, { passive: false });
+        this.canvas.addEventListener('touchend', (e) => {
+            this.handleUp(e.changedTouches[0]);
         });
 
-        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        // Drag and Drop (Desktop)
+        this.canvas.addEventListener('dragenter', (e) => e.preventDefault());
+        this.canvas.addEventListener('dragover', (e) => e.preventDefault());
+        this.canvas.addEventListener('dragleave', (e) => e.preventDefault());
+        this.canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            try {
+                // Clear any click-to-place to avoid double placement on desktop
+                this.lastPlacedPlayer = null;
+                const dataStr = e.dataTransfer.getData('text/plain');
+                if (!dataStr) return;
+                const data = JSON.parse(dataStr);
+                const coords = this.getCoords(e);
+                this.addPlayerToField(data.id, data.name, coords.x, coords.y);
+            } catch (err) {
+                console.error("Drop error:", err);
+            }
+        });
 
+        // Tool buttons
         document.querySelectorAll('#screen-tactic .tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('#screen-tactic .tool-btn').forEach(b => b.classList.remove('active'));
@@ -68,7 +96,43 @@ const tacticBoard = {
             });
         });
 
-        window.addEventListener('resize', () => this.resizeCanvas());
+        if (!this._resizeAttached) {
+            window.addEventListener('resize', () => {
+                if (document.getElementById('screen-tactic').classList.contains('active')) {
+                    this.resizeCanvas();
+                }
+            });
+            this._resizeAttached = true;
+        }
+    },
+
+    getCoords(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    },
+
+    addPlayerToField(id, name, x, y) {
+        // Anti-duplication check: check if player is already on field
+        const exists = this.playersOnField.some(p => p.id === id);
+        if (exists && id !== 'O') {
+            console.log("Player already on field:", name);
+            return;
+        }
+
+        this.playersOnField.push({
+            id: id,
+            name: name,
+            x: x,
+            y: y,
+            isOpponent: id === 'O'
+        });
+        this.render();
+        this.renderPlayerPool();
     },
 
     renderPlayerPool() {
@@ -89,9 +153,23 @@ const tacticBoard = {
             div.textContent = p.alias;
             div.draggable = true;
             div.dataset.playerId = p.id;
+
             div.addEventListener('dragstart', (e) => {
+                // Clear fallback to avoid double placement
+                this.lastPlacedPlayer = null;
                 e.dataTransfer.setData('text/plain', JSON.stringify({ id: p.id, name: p.alias }));
             });
+
+            div.addEventListener('click', () => {
+                this.lastPlacedPlayer = { id: p.id, name: p.alias };
+                document.querySelectorAll('.player-item').forEach(el => {
+                    el.style.borderColor = 'rgba(255,255,255,0.05)';
+                    el.style.boxShadow = 'none';
+                });
+                div.style.border = '2px solid var(--accent-color)';
+                div.style.boxShadow = '0 0 10px var(--accent-color)';
+            });
+
             container.appendChild(div);
         });
 
@@ -123,45 +201,79 @@ const tacticBoard = {
                 </div>
             `;
         }
-
-        // Keep hidden textarea updated for SAVING
         document.getElementById('substitutes-text').value = subs.map(s => s.alias).join(', ');
     },
 
-    handleMouseDown(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+    handleDown(e) {
+        const { x, y } = this.getCoords(e);
+        const w = this.canvas.width;
+        const hitRadius = Math.max(25, w * 0.06);
 
         if (this.currentTool === 'move') {
+            if (this.lastPlacedPlayer) {
+                this.addPlayerToField(this.lastPlacedPlayer.id, this.lastPlacedPlayer.name, x, y);
+                this.lastPlacedPlayer = null;
+                document.querySelectorAll('.player-item').forEach(el => {
+                    el.style.borderColor = 'rgba(255,255,255,0.05)';
+                    el.style.boxShadow = 'none';
+                });
+                return;
+            }
+
             const index = this.playersOnField.findIndex(p => {
                 const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
-                return dist < 20;
+                return dist < hitRadius;
             });
             if (index !== -1) {
                 this.selectedPlayer = this.playersOnField[index];
-                // Right click or long press could be delete, but for now let's just move
+                this.render(); // Redraw to maybe show a selection indicator
+            } else {
+                this.selectedPlayer = null;
+                this.render();
             }
-        } else if (['line', 'arrow'].includes(this.currentTool)) {
+        }
+        else if (this.currentTool === 'delete') {
+            const index = this.playersOnField.findIndex(p => {
+                const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
+                return dist < hitRadius;
+            });
+            if (index !== -1) {
+                this.removePlayer(this.playersOnField[index]);
+            }
+        }
+        else if (['line', 'arrow'].includes(this.currentTool)) {
             this.isDrawing = true;
             this.startX = x;
             this.startY = y;
-        } else if (this.currentTool === 'opponent') {
-            this.playersOnField.push({ name: 'O', x, y, isOpponent: true });
+        }
+        else if (this.currentTool === 'opponent') {
+            this.playersOnField.push({ id: 'O_' + Date.now(), name: 'O', x, y, isOpponent: true });
             this.render();
         }
     },
 
-    handleMouseMove(e) {
-        if (!this.selectedPlayer && !this.isDrawing) return;
+    removePlayer(player) {
+        this.playersOnField = this.playersOnField.filter(p => p !== player);
+        if (this.selectedPlayer === player) this.selectedPlayer = null;
+        this.render();
+        this.renderPlayerPool();
+    },
 
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+    // New specific delete function for the main button
+    deleteSelection() {
+        if (this.selectedPlayer) {
+            this.removePlayer(this.selectedPlayer);
+        } else {
+            // If no player selected, maybe remove the last one added? 
+            if (this.playersOnField.length > 0) {
+                this.removePlayer(this.playersOnField[this.playersOnField.length - 1]);
+            }
+        }
+    },
+
+    handleMove(e) {
+        if (!this.selectedPlayer && !this.isDrawing) return;
+        const { x, y } = this.getCoords(e);
 
         if (this.selectedPlayer) {
             this.selectedPlayer.x = x;
@@ -170,19 +282,14 @@ const tacticBoard = {
         }
 
         if (this.isDrawing) {
-            this.render(); // Redraw field + items
+            this.render();
             this.drawTempShape(x, y);
         }
     },
 
-    handleMouseUp(e) {
+    handleUp(e) {
         if (this.isDrawing) {
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            const x = (e.clientX - rect.left) * scaleX;
-            const y = (e.clientY - rect.top) * scaleY;
-
+            const { x, y } = this.getCoords(e || { clientX: this.startX, clientY: this.startY });
             this.drawings.push({
                 type: this.currentTool,
                 x1: this.startX,
@@ -193,16 +300,13 @@ const tacticBoard = {
             this.isDrawing = false;
         }
 
-        // Remove player if dragged out of canvas? 
         if (this.selectedPlayer) {
-            if (this.selectedPlayer.x < 0 || this.selectedPlayer.x > this.canvas.width ||
-                this.selectedPlayer.y < 0 || this.selectedPlayer.y > this.canvas.height) {
-                this.playersOnField = this.playersOnField.filter(p => p !== this.selectedPlayer);
-                this.renderPlayerPool();
+            const padding = -50;
+            if (this.selectedPlayer.x < padding || this.selectedPlayer.x > this.canvas.width - padding ||
+                this.selectedPlayer.y < padding || this.selectedPlayer.y > this.canvas.height - padding) {
+                this.removePlayer(this.selectedPlayer);
             }
         }
-
-        this.selectedPlayer = null;
         this.render();
     },
 
@@ -234,6 +338,8 @@ const tacticBoard = {
     },
 
     render() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
         this.drawField();
 
         // Draw saved drawings
@@ -259,53 +365,55 @@ const tacticBoard = {
         });
 
         // Draw players
+        const playerRadius = Math.max(12, w * 0.04);
+        const fontSize = Math.max(10, w * 0.03);
+
         this.playersOnField.forEach(p => {
             this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+            this.ctx.arc(p.x, p.y, playerRadius, 0, Math.PI * 2);
             this.ctx.fillStyle = p.isOpponent ? '#2c3e50' : '#800020';
             this.ctx.fill();
-            this.ctx.strokeStyle = 'white';
-            this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = (this.selectedPlayer === p) ? 'yellow' : 'white';
+            this.ctx.lineWidth = (this.selectedPlayer === p) ? 4 : 2;
             this.ctx.stroke();
 
             this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 11px Outfit';
+            this.ctx.font = `bold ${fontSize}px Outfit`;
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(p.name || '?', p.x, p.y + 4);
+            this.ctx.fillText(p.name || '?', p.x, p.y + (fontSize / 3));
         });
     },
 
     drawField() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const margin = 20;
         this.ctx.fillStyle = '#081a08';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
+        this.ctx.fillRect(0, 0, w, h);
         this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
         this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(10, 10, this.canvas.width - 20, this.canvas.height - 20);
-
+        this.ctx.strokeRect(margin, margin, w - (margin * 2), h - (margin * 2));
         this.ctx.beginPath();
-        this.ctx.moveTo(10, this.canvas.height / 2);
-        this.ctx.lineTo(this.canvas.width - 10, this.canvas.height / 2);
+        this.ctx.moveTo(margin, h / 2);
+        this.ctx.lineTo(w - margin, h / 2);
         this.ctx.stroke();
-
         this.ctx.beginPath();
-        this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2, 40, 0, Math.PI * 2);
+        this.ctx.arc(w / 2, h / 2, w * 0.15, 0, Math.PI * 2);
         this.ctx.stroke();
-
-        this.ctx.strokeRect(this.canvas.width / 2 - 60, 10, 120, 50);
-        this.ctx.strokeRect(this.canvas.width / 2 - 60, this.canvas.height - 60, 120, 50);
-    },
-
-    undoDraw() {
-        this.drawings.pop();
-        this.render();
+        const areaW = w * 0.4;
+        const areaH = h * 0.12;
+        this.ctx.strokeRect(w / 2 - areaW / 2, margin, areaW, areaH);
+        this.ctx.strokeRect(w / 2 - areaW / 2, h - margin - areaH, areaW, areaH);
     },
 
     clear() {
-        this.playersOnField = [];
-        this.drawings = [];
-        this.render();
-        this.renderPlayerPool();
+        if (confirm("¿Limpiar toda la pizarra?")) {
+            this.playersOnField = [];
+            this.drawings = [];
+            this.selectedPlayer = null;
+            this.render();
+            this.renderPlayerPool();
+        }
     },
 
     async save() {
