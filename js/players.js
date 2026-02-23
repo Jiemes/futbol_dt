@@ -304,7 +304,8 @@ const playersManager = {
             console.log("Activando modal...");
             modal.classList.add('active');
             // Forzar display por si falla el CSS
-            modal.style.display = 'flex';
+            modal.style.display = 'block';
+            modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             console.log("Cerrando modal...");
             modal.classList.remove('active');
@@ -317,8 +318,12 @@ const playersManager = {
     showDetailModal(show) {
         const modal = document.getElementById('modal-player-detail');
         if (modal) {
-            if (show) modal.classList.add('active');
-            else modal.classList.remove('active');
+            if (show) {
+                modal.classList.add('active');
+                modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                modal.classList.remove('active');
+            }
         }
     },
 

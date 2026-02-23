@@ -28,6 +28,7 @@ const playersManager = {
             if (window.app && window.app.loadPlayers) window.app.loadPlayers();
             if (window.attendanceManager) window.attendanceManager.renderAttendanceList();
             if (window.statsManager) window.statsManager.renderStats();
+            if (window.tacticBoard) window.tacticBoard.renderPlayerPool();
         } catch (error) {
             console.error("Error cargando jugadoras:", error);
         }
@@ -127,7 +128,7 @@ const playersManager = {
             this.resetForm();
             this.showAddModal(false);
         } catch (error) {
-            console.error(error);
+            console.error("Error al guardar:", error);
             alert("Error al guardar jugadora.");
         }
     },
@@ -179,7 +180,7 @@ const playersManager = {
                 await this.loadPlayers();
                 this.showDetailModal(false);
             } catch (error) {
-                console.error(error);
+                console.error("Error al eliminar:", error);
             }
         }
     },
@@ -241,7 +242,7 @@ const playersManager = {
             presenceCount = attData.filter(a => a.present).length;
             attendancePct = totalSessions > 0 ? Math.round((presenceCount / totalSessions) * 100) : 0;
         } catch (error) {
-            console.error(error);
+            console.error("Error obteniendo asistencia:", error);
         }
 
         const content = document.getElementById('player-detail-content');
@@ -303,7 +304,8 @@ const playersManager = {
             console.log("Activando modal...");
             modal.classList.add('active');
             // Forzar display por si falla el CSS
-            modal.style.display = 'flex';
+            modal.style.display = 'block';
+            modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             console.log("Cerrando modal...");
             modal.classList.remove('active');
@@ -316,8 +318,12 @@ const playersManager = {
     showDetailModal(show) {
         const modal = document.getElementById('modal-player-detail');
         if (modal) {
-            if (show) modal.classList.add('active');
-            else modal.classList.remove('active');
+            if (show) {
+                modal.classList.add('active');
+                modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                modal.classList.remove('active');
+            }
         }
     },
 
