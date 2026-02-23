@@ -37,6 +37,15 @@ const tacticBoard = {
             this.canvas.replaceWith(this.canvas.cloneNode(true));
             this.canvas = document.getElementById('tactic-canvas');
             this._initialized = true;
+
+            // GLOBAL KEYBOARD SHORTCUTS
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (this.selectedPlayer) {
+                        this.removePlayer(this.selectedPlayer);
+                    }
+                }
+            });
         }
 
         this.ctx = this.canvas.getContext('2d');
@@ -67,7 +76,8 @@ const tacticBoard = {
         this.canvas.addEventListener('drop', (e) => {
             e.preventDefault();
             try {
-                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const dataStr = e.dataTransfer.getData('text/plain');
+                const data = JSON.parse(dataStr);
                 const { x, y } = this.getCoords(e);
                 this.addPlayerToField(data.id, data.name, x, y);
             } catch (err) {
@@ -105,12 +115,16 @@ const tacticBoard = {
     },
 
     addPlayerToField(id, name, x, y) {
+        // Double check to avoid duplicates with drag+click combo
+        const exists = this.playersOnField.some(p => p.id === id);
+        if (exists && id !== 'O') return;
+
         this.playersOnField.push({
             id: id,
             name: name,
             x: x,
             y: y,
-            isOpponent: false
+            isOpponent: id === 'O'
         });
         this.render();
         this.renderPlayerPool();
@@ -144,10 +158,15 @@ const tacticBoard = {
             div.addEventListener('click', () => {
                 this.lastPlacedPlayer = { id: p.id, name: p.alias };
                 // Visual feedback
-                document.querySelectorAll('.player-item').forEach(el => el.style.borderColor = 'transparent');
+                document.querySelectorAll('.player-item').forEach(el => {
+                    el.style.borderColor = 'rgba(255,255,255,0.05)';
+                    el.style.boxShadow = 'none';
+                });
                 div.style.border = '2px solid var(--accent-color)';
+                div.style.boxShadow = '0 0 10px var(--accent-color)';
                 if (window.innerWidth <= 768) {
-                    alert(`Seleccionada: ${p.alias}. Ahora toca el campo para colocarla.`);
+                    // Less intrusive feedback than alert
+                    console.log(`Seleccionada: ${p.alias}`);
                 }
             });
 
@@ -190,14 +209,17 @@ const tacticBoard = {
     handleDown(e) {
         const { x, y } = this.getCoords(e);
         const w = this.canvas.width;
-        const hitRadius = Math.max(25, w * 0.06); // Dynamic hit radius
+        const hitRadius = Math.max(25, w * 0.06);
 
+        // 1. Tool Selection
         if (this.currentTool === 'move') {
-            // Mobile Click-to-place fallback
             if (this.lastPlacedPlayer) {
                 this.addPlayerToField(this.lastPlacedPlayer.id, this.lastPlacedPlayer.name, x, y);
                 this.lastPlacedPlayer = null;
-                document.querySelectorAll('.player-item').forEach(el => el.style.borderColor = 'transparent');
+                document.querySelectorAll('.player-item').forEach(el => {
+                    el.style.borderColor = 'rgba(255,255,255,0.05)';
+                    el.style.boxShadow = 'none';
+                });
                 return;
             }
 
@@ -208,14 +230,32 @@ const tacticBoard = {
             if (index !== -1) {
                 this.selectedPlayer = this.playersOnField[index];
             }
-        } else if (['line', 'arrow'].includes(this.currentTool)) {
+        }
+        else if (this.currentTool === 'delete') {
+            const index = this.playersOnField.findIndex(p => {
+                const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
+                return dist < hitRadius;
+            });
+            if (index !== -1) {
+                this.removePlayer(this.playersOnField[index]);
+            }
+        }
+        else if (['line', 'arrow'].includes(this.currentTool)) {
             this.isDrawing = true;
             this.startX = x;
             this.startY = y;
-        } else if (this.currentTool === 'opponent') {
-            this.playersOnField.push({ name: 'O', x, y, isOpponent: true });
+        }
+        else if (this.currentTool === 'opponent') {
+            this.playersOnField.push({ id: 'O', name: 'O', x, y, isOpponent: true });
             this.render();
         }
+    },
+
+    removePlayer(player) {
+        this.playersOnField = this.playersOnField.filter(p => p !== player);
+        this.selectedPlayer = null;
+        this.render();
+        this.renderPlayerPool();
     },
 
     handleMove(e) {
@@ -252,8 +292,7 @@ const tacticBoard = {
             const padding = -50;
             if (this.selectedPlayer.x < padding || this.selectedPlayer.x > this.canvas.width - padding ||
                 this.selectedPlayer.y < padding || this.selectedPlayer.y > this.canvas.height - padding) {
-                this.playersOnField = this.playersOnField.filter(p => p !== this.selectedPlayer);
-                this.renderPlayerPool();
+                this.removePlayer(this.selectedPlayer);
             }
         }
 
@@ -373,7 +412,12 @@ const tacticBoard = {
     },
 
     undoDraw() {
-        this.drawings.pop();
+        if (this.drawings.length > 0) {
+            this.drawings.pop();
+        } else if (this.playersOnField.length > 0) {
+            const removed = this.playersOnField.pop();
+            this.renderPlayerPool();
+        }
         this.render();
     },
 
