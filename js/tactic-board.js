@@ -9,6 +9,7 @@ const tacticBoard = {
     startY: 0,
     selectedPlayer: null,
     currentFilter: '1ra',
+    lastPlacedPlayer: null, // For mobile placement fallback
 
     async init() {
         this.canvas = document.getElementById('tactic-canvas');
@@ -31,35 +32,48 @@ const tacticBoard = {
     },
 
     addEventListeners() {
-        this.canvas.replaceWith(this.canvas.cloneNode(true));
-        this.canvas = document.getElementById('tactic-canvas');
+        // Prevent double binding by removing old listeners via cloning (only if not already done)
+        if (!this._initialized) {
+            this.canvas.replaceWith(this.canvas.cloneNode(true));
+            this.canvas = document.getElementById('tactic-canvas');
+            this._initialized = true;
+        }
+
         this.ctx = this.canvas.getContext('2d');
 
+        // Mouse Events
+        this.canvas.addEventListener('mousedown', (e) => this.handleDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.handleUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.handleUp(e));
+
+        // Touch Events
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.handleDown(e.touches[0]);
+        }, { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            this.handleMove(e.touches[0]);
+        }, { passive: false });
+        this.canvas.addEventListener('touchend', (e) => {
+            this.handleUp(e.changedTouches[0]);
+        });
+
+        // Drag and Drop (Desktop)
         this.canvas.addEventListener('dragover', (e) => e.preventDefault());
         this.canvas.addEventListener('drop', (e) => {
             e.preventDefault();
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            const x = (e.clientX - rect.left) * scaleX;
-            const y = (e.clientY - rect.top) * scaleY;
-
-            this.playersOnField.push({
-                id: data.id,
-                name: data.name,
-                x: x,
-                y: y,
-                isOpponent: false
-            });
-            this.render();
-            this.renderPlayerPool();
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const { x, y } = this.getCoords(e);
+                this.addPlayerToField(data.id, data.name, x, y);
+            } catch (err) {
+                console.error("Drop error:", err);
+            }
         });
 
-        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-
+        // Tool buttons
         document.querySelectorAll('#screen-tactic .tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('#screen-tactic .tool-btn').forEach(b => b.classList.remove('active'));
@@ -68,7 +82,36 @@ const tacticBoard = {
             });
         });
 
-        window.addEventListener('resize', () => this.resizeCanvas());
+        if (!this._resizeAttached) {
+            window.addEventListener('resize', () => {
+                if (document.getElementById('screen-tactic').classList.contains('active')) {
+                    this.resizeCanvas();
+                }
+            });
+            this._resizeAttached = true;
+        }
+    },
+
+    getCoords(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    },
+
+    addPlayerToField(id, name, x, y) {
+        this.playersOnField.push({
+            id: id,
+            name: name,
+            x: x,
+            y: y,
+            isOpponent: false
+        });
+        this.render();
+        this.renderPlayerPool();
     },
 
     renderPlayerPool() {
@@ -89,9 +132,23 @@ const tacticBoard = {
             div.textContent = p.alias;
             div.draggable = true;
             div.dataset.playerId = p.id;
+
+            // Standard Drag
             div.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', JSON.stringify({ id: p.id, name: p.alias }));
             });
+
+            // Mobile click fallback
+            div.addEventListener('click', () => {
+                this.lastPlacedPlayer = { id: p.id, name: p.alias };
+                // Visual feedback
+                document.querySelectorAll('.player-item').forEach(el => el.style.borderColor = 'transparent');
+                div.style.border = '2px solid var(--accent-color)';
+                if (window.innerWidth <= 768) {
+                    alert(`Seleccionada: ${p.alias}. Ahora toca el campo para colocarla.`);
+                }
+            });
+
             container.appendChild(div);
         });
 
@@ -128,21 +185,26 @@ const tacticBoard = {
         document.getElementById('substitutes-text').value = subs.map(s => s.alias).join(', ');
     },
 
-    handleMouseDown(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+    handleDown(e) {
+        const { x, y } = this.getCoords(e);
+        const w = this.canvas.width;
+        const hitRadius = Math.max(25, w * 0.06); // Dynamic hit radius
 
         if (this.currentTool === 'move') {
+            // Mobile Click-to-place fallback
+            if (this.lastPlacedPlayer) {
+                this.addPlayerToField(this.lastPlacedPlayer.id, this.lastPlacedPlayer.name, x, y);
+                this.lastPlacedPlayer = null;
+                document.querySelectorAll('.player-item').forEach(el => el.style.borderColor = 'transparent');
+                return;
+            }
+
             const index = this.playersOnField.findIndex(p => {
                 const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
-                return dist < 20;
+                return dist < hitRadius;
             });
             if (index !== -1) {
                 this.selectedPlayer = this.playersOnField[index];
-                // Right click or long press could be delete, but for now let's just move
             }
         } else if (['line', 'arrow'].includes(this.currentTool)) {
             this.isDrawing = true;
@@ -154,14 +216,9 @@ const tacticBoard = {
         }
     },
 
-    handleMouseMove(e) {
+    handleMove(e) {
         if (!this.selectedPlayer && !this.isDrawing) return;
-
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const { x, y } = this.getCoords(e);
 
         if (this.selectedPlayer) {
             this.selectedPlayer.x = x;
@@ -170,19 +227,14 @@ const tacticBoard = {
         }
 
         if (this.isDrawing) {
-            this.render(); // Redraw field + items
+            this.render();
             this.drawTempShape(x, y);
         }
     },
 
-    handleMouseUp(e) {
+    handleUp(e) {
         if (this.isDrawing) {
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            const x = (e.clientX - rect.left) * scaleX;
-            const y = (e.clientY - rect.top) * scaleY;
-
+            const { x, y } = this.getCoords(e || { clientX: this.startX, clientY: this.startY });
             this.drawings.push({
                 type: this.currentTool,
                 x1: this.startX,
@@ -193,10 +245,11 @@ const tacticBoard = {
             this.isDrawing = false;
         }
 
-        // Remove player if dragged out of canvas? 
         if (this.selectedPlayer) {
-            if (this.selectedPlayer.x < 0 || this.selectedPlayer.x > this.canvas.width ||
-                this.selectedPlayer.y < 0 || this.selectedPlayer.y > this.canvas.height) {
+            // Keep on field if released near edges, only remove if clearly out
+            const padding = -50;
+            if (this.selectedPlayer.x < padding || this.selectedPlayer.x > this.canvas.width - padding ||
+                this.selectedPlayer.y < padding || this.selectedPlayer.y > this.canvas.height - padding) {
                 this.playersOnField = this.playersOnField.filter(p => p !== this.selectedPlayer);
                 this.renderPlayerPool();
             }
@@ -234,6 +287,8 @@ const tacticBoard = {
     },
 
     render() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
         this.drawField();
 
         // Draw saved drawings
@@ -259,8 +314,8 @@ const tacticBoard = {
         });
 
         // Draw players
-        const playerRadius = w * 0.05; // 5% del ancho
-        const fontSize = Math.max(10, w * 0.035);
+        const playerRadius = Math.max(12, w * 0.04);
+        const fontSize = Math.max(10, w * 0.03);
 
         this.playersOnField.forEach(p => {
             this.ctx.beginPath();
@@ -281,7 +336,7 @@ const tacticBoard = {
     drawField() {
         const w = this.canvas.width;
         const h = this.canvas.height;
-        const margin = w * 0.05;
+        const margin = 20;
 
         // Césped
         this.ctx.fillStyle = '#081a08';

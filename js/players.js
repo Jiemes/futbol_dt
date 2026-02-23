@@ -28,6 +28,7 @@ const playersManager = {
             if (window.app && window.app.loadPlayers) window.app.loadPlayers();
             if (window.attendanceManager) window.attendanceManager.renderAttendanceList();
             if (window.statsManager) window.statsManager.renderStats();
+            if (window.tacticBoard) window.tacticBoard.renderPlayerPool();
         } catch (error) {
             console.error("Error cargando jugadoras:", error);
         }
