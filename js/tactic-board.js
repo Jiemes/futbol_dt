@@ -32,7 +32,6 @@ const tacticBoard = {
     },
 
     addEventListeners() {
-        // Prevent double binding by removing old listeners via cloning (only if not already done)
         if (!this._initialized) {
             this.canvas.replaceWith(this.canvas.cloneNode(true));
             this.canvas = document.getElementById('tactic-canvas');
@@ -76,10 +75,13 @@ const tacticBoard = {
         this.canvas.addEventListener('drop', (e) => {
             e.preventDefault();
             try {
+                // Clear any click-to-place to avoid double placement on desktop
+                this.lastPlacedPlayer = null;
                 const dataStr = e.dataTransfer.getData('text/plain');
+                if (!dataStr) return;
                 const data = JSON.parse(dataStr);
-                const { x, y } = this.getCoords(e);
-                this.addPlayerToField(data.id, data.name, x, y);
+                const coords = this.getCoords(e);
+                this.addPlayerToField(data.id, data.name, coords.x, coords.y);
             } catch (err) {
                 console.error("Drop error:", err);
             }
@@ -115,9 +117,12 @@ const tacticBoard = {
     },
 
     addPlayerToField(id, name, x, y) {
-        // Double check to avoid duplicates with drag+click combo
+        // Anti-duplication check: check if player is already on field
         const exists = this.playersOnField.some(p => p.id === id);
-        if (exists && id !== 'O') return;
+        if (exists && id !== 'O') {
+            console.log("Player already on field:", name);
+            return;
+        }
 
         this.playersOnField.push({
             id: id,
@@ -149,25 +154,20 @@ const tacticBoard = {
             div.draggable = true;
             div.dataset.playerId = p.id;
 
-            // Standard Drag
             div.addEventListener('dragstart', (e) => {
+                // Clear fallback to avoid double placement
+                this.lastPlacedPlayer = null;
                 e.dataTransfer.setData('text/plain', JSON.stringify({ id: p.id, name: p.alias }));
             });
 
-            // Mobile click fallback
             div.addEventListener('click', () => {
                 this.lastPlacedPlayer = { id: p.id, name: p.alias };
-                // Visual feedback
                 document.querySelectorAll('.player-item').forEach(el => {
                     el.style.borderColor = 'rgba(255,255,255,0.05)';
                     el.style.boxShadow = 'none';
                 });
                 div.style.border = '2px solid var(--accent-color)';
                 div.style.boxShadow = '0 0 10px var(--accent-color)';
-                if (window.innerWidth <= 768) {
-                    // Less intrusive feedback than alert
-                    console.log(`Seleccionada: ${p.alias}`);
-                }
             });
 
             container.appendChild(div);
@@ -201,8 +201,6 @@ const tacticBoard = {
                 </div>
             `;
         }
-
-        // Keep hidden textarea updated for SAVING
         document.getElementById('substitutes-text').value = subs.map(s => s.alias).join(', ');
     },
 
@@ -211,7 +209,6 @@ const tacticBoard = {
         const w = this.canvas.width;
         const hitRadius = Math.max(25, w * 0.06);
 
-        // 1. Tool Selection
         if (this.currentTool === 'move') {
             if (this.lastPlacedPlayer) {
                 this.addPlayerToField(this.lastPlacedPlayer.id, this.lastPlacedPlayer.name, x, y);
@@ -229,6 +226,10 @@ const tacticBoard = {
             });
             if (index !== -1) {
                 this.selectedPlayer = this.playersOnField[index];
+                this.render(); // Redraw to maybe show a selection indicator
+            } else {
+                this.selectedPlayer = null;
+                this.render();
             }
         }
         else if (this.currentTool === 'delete') {
@@ -246,16 +247,29 @@ const tacticBoard = {
             this.startY = y;
         }
         else if (this.currentTool === 'opponent') {
-            this.playersOnField.push({ id: 'O', name: 'O', x, y, isOpponent: true });
+            this.playersOnField.push({ id: 'O_' + Date.now(), name: 'O', x, y, isOpponent: true });
             this.render();
         }
     },
 
     removePlayer(player) {
         this.playersOnField = this.playersOnField.filter(p => p !== player);
-        this.selectedPlayer = null;
+        if (this.selectedPlayer === player) this.selectedPlayer = null;
         this.render();
         this.renderPlayerPool();
+    },
+
+    // New specific delete function for the main button
+    deleteSelection() {
+        if (this.selectedPlayer) {
+            this.removePlayer(this.selectedPlayer);
+        } else {
+            // If no player selected, maybe remove the last one added? 
+            // Or just alert to select first. Let's remove last player if exists.
+            if (this.playersOnField.length > 0) {
+                this.removePlayer(this.playersOnField[this.playersOnField.length - 1]);
+            }
+        }
     },
 
     handleMove(e) {
@@ -288,15 +302,12 @@ const tacticBoard = {
         }
 
         if (this.selectedPlayer) {
-            // Keep on field if released near edges, only remove if clearly out
             const padding = -50;
             if (this.selectedPlayer.x < padding || this.selectedPlayer.x > this.canvas.width - padding ||
                 this.selectedPlayer.y < padding || this.selectedPlayer.y > this.canvas.height - padding) {
                 this.removePlayer(this.selectedPlayer);
             }
         }
-
-        this.selectedPlayer = null;
         this.render();
     },
 
@@ -363,8 +374,8 @@ const tacticBoard = {
             this.ctx.arc(p.x, p.y, playerRadius, 0, Math.PI * 2);
             this.ctx.fillStyle = p.isOpponent ? '#2c3e50' : '#800020';
             this.ctx.fill();
-            this.ctx.strokeStyle = 'white';
-            this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = (this.selectedPlayer === p) ? 'yellow' : 'white';
+            this.ctx.lineWidth = (this.selectedPlayer === p) ? 4 : 2;
             this.ctx.stroke();
 
             this.ctx.fillStyle = 'white';
@@ -378,54 +389,32 @@ const tacticBoard = {
         const w = this.canvas.width;
         const h = this.canvas.height;
         const margin = 20;
-
-        // Césped
         this.ctx.fillStyle = '#081a08';
         this.ctx.fillRect(0, 0, w, h);
-
         this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
         this.ctx.lineWidth = 2;
-
-        // Líneas perimetrales
         this.ctx.strokeRect(margin, margin, w - (margin * 2), h - (margin * 2));
-
-        // Línea de medio campo
         this.ctx.beginPath();
         this.ctx.moveTo(margin, h / 2);
         this.ctx.lineTo(w - margin, h / 2);
         this.ctx.stroke();
-
-        // Círculo central
         this.ctx.beginPath();
         this.ctx.arc(w / 2, h / 2, w * 0.15, 0, Math.PI * 2);
         this.ctx.stroke();
-
-        // Áreas (proporcionales)
         const areaW = w * 0.4;
         const areaH = h * 0.12;
-
-        // Área superior
         this.ctx.strokeRect(w / 2 - areaW / 2, margin, areaW, areaH);
-
-        // Área inferior
         this.ctx.strokeRect(w / 2 - areaW / 2, h - margin - areaH, areaW, areaH);
     },
 
-    undoDraw() {
-        if (this.drawings.length > 0) {
-            this.drawings.pop();
-        } else if (this.playersOnField.length > 0) {
-            const removed = this.playersOnField.pop();
+    clear() {
+        if (confirm("¿Limpiar toda la pizarra?")) {
+            this.playersOnField = [];
+            this.drawings = [];
+            this.selectedPlayer = null;
+            this.render();
             this.renderPlayerPool();
         }
-        this.render();
-    },
-
-    clear() {
-        this.playersOnField = [];
-        this.drawings = [];
-        this.render();
-        this.renderPlayerPool();
     },
 
     async save() {
