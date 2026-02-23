@@ -61,7 +61,9 @@ const tacticBoard = {
         });
 
         // Drag and Drop (Desktop)
+        this.canvas.addEventListener('dragenter', (e) => e.preventDefault());
         this.canvas.addEventListener('dragover', (e) => e.preventDefault());
+        this.canvas.addEventListener('dragleave', (e) => e.preventDefault());
         this.canvas.addEventListener('drop', (e) => {
             e.preventDefault();
             try {
