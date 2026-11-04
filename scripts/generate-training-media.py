@@ -44,7 +44,7 @@ SCENES = [
          passes=[(1, 2.5, (.18, .25), (.82, .28)), (4, 5.5, (.82, .28), (.55, .8)), (7, 8.5, (.55, .8), (.2, .53))]),
     dict(file='03-duelo-apoyos', title='C · 1 contra 1 con apoyo neutral',
          subtitle='Un apoyo por fuera · Con cuatro, agregar otro al lado opuesto', mode='duel',
-         phases=[(0, 'La portadora elige: conducir o combinar'), (3, 'El apoyo neutral devuelve a quien tiene la pelota'), (6, 'Moverse para recibir por delante de la rival'), (9, 'Cruzar la puerta con control; al recuperar, invertir')],
+         phases=[(0, 'La portadora elige: conducir o combinar'), (3, 'El apoyo neutral devuelve a quien tiene la pelota'), (6, 'Moverse para recibir por delante de la rival'), (9, 'Cruzar la puerta con control, al recuperar, invertir')],
          players=[player('1', RED, moving((0, (.4, .76)), (2, (.4, .67)), (3.5, (.4, .67)), (6, (.36, .27)), (8, (.36, .27)), (10.5, (.5, -.02)), (12, (.5, -.02)))),
                   player('D', BLUE, moving((0, (.52, .45)), (3, (.35, .48)), (6, (.28, .35)), (10, (.4, .14)), (12, (.4, .14)))),
                   player('C', WHITE, fixed(-.035, .46))],
@@ -63,7 +63,7 @@ SCENES = [
          passes=[(1, 2.5, (.25, .8), (.43, .5)), (3.5, 5, (.43, .5), (.75, .8)), (6, 8, (.75, .8), (.85, .38))]),
     dict(file='05-salida-con-arquera', title='Desde las 20 · La arquera también apoya',
          subtitle='5 que construyen contra 5 que presionan + arquera', mode='build',
-         phases=[(0, 'Arquera inicia; abrir dos lados y una línea interior'), (3, 'Recibir perfilada y ofrecer un pase de seguridad'), (6, 'Cambiar de lado cuando la presión se acerca'), (9, 'Salir con control por una puerta; luego reiniciar')],
+         phases=[(0, 'Arquera inicia; abrir dos lados y una línea interior'), (3, 'Recibir perfilada y ofrecer un pase de seguridad'), (6, 'Cambiar de lado cuando la presión se acerca'), (9, 'Salir con control por una puerta, luego reiniciar')],
          players=[player('A', KEEPER, fixed(.5, .94)), player('1', RED, fixed(.24, .74)), player('2', RED, fixed(.76, .74)),
                   player('3', RED, fixed(.5, .48)), player('4', RED, fixed(.13, .28)),
                   player('5', RED, moving((0, (.87, .28)), (8, (.87, .28)), (10.7, (.8, -.02)), (12, (.8, -.02)))),
@@ -75,7 +75,7 @@ SCENES = [
          passes=[(1, 2, (.5, .94), (.24, .74)), (3, 4.3, (.24, .74), (.5, .48)), (5, 6.3, (.5, .48), (.76, .74)), (7, 8.4, (.76, .74), (.87, .28))]),
     dict(file='06-ataque-pase-atras', title='Ataque · Banda, llegadas y pase atrás',
          subtitle='4 contra 4 + 2 apoyos neutrales por fuera + arquera', mode='attack',
-         phases=[(0, 'El apoyo de banda ofrece amplitud'), (3, 'Una al primer palo, otra al segundo, otra de frente'), (6, 'Pase atrás si está libre; si no, buscar otra opción'), (9, 'Remate y apoyo de seguridad detrás de la acción')],
+         phases=[(0, 'El apoyo de banda ofrece amplitud'), (3, 'Una al primer palo, otra al segundo, otra de frente'), (6, 'Pase atrás si está libre, si no, buscar otra opción'), (9, 'Remate y apoyo de seguridad detrás de la acción')],
          players=[player('1', RED, moving((0, (.5, .65)), (3, (.5, .65)), (7.8, (.49, .43)), (12, (.49, .43)))),
                   player('2', RED, moving((0, (.36, .28)), (3, (.36, .28)), (6, (.35, .13)), (12, (.35, .13)))),
                   player('3', RED, moving((0, (.67, .39)), (3, (.67, .39)), (6, (.67, .13)), (12, (.67, .13)))),
@@ -180,7 +180,7 @@ def athlete(cx, cy, pose):
     return f'<g transform="translate({cx} {cy})"><ellipse cx="0" cy="65" rx="72" ry="8" fill="#0e2c24"/><path d="M-2-101 Q-33-117-37-85 Q-19-94-10-84" fill="#242b28"/><circle cy="-78" r="18" fill="#deb48d"/><path d="{arms}" fill="none" stroke="#deb48d" stroke-width="12" stroke-linecap="round"/><path d="{legs}" fill="none" stroke="#d5ae88" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="M0-52-4-7" stroke="#c83c61" stroke-width="36" stroke-linecap="round"/><path d="M-5-7-16 7 M-2-7 13 8" stroke="#213a32" stroke-width="24" stroke-linecap="round"/></g>'
 
 parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 640" role="img" aria-label="Preparación progresiva: tobillo, cadera, equilibrio y frenada"><rect width="900" height="640" rx="18" fill="#102c27"/><text x="32" y="35" fill="#99cbb6" font-family="Arial,sans-serif" font-size="14" letter-spacing="3">PALOMETAS · ENTRADA EN CALOR</text><text x="32" y="76" fill="#fff9ee" font-family="Arial,sans-serif" font-size="28" font-weight="700">Preparar el movimiento, de menos a más</text>']
-panels = [(26, 105, 'ankle', '01 · TOBILLO', 'Talón apoyado; avanzar sin forzar.'), (462, 105, 'hip', '02 · CADERA', 'Abrir y cerrar con control.'), (26, 365, 'balance', '03 · FUERZA Y EQUILIBRIO', 'Rodilla estable; rango cómodo.'), (462, 365, 'brake', '04 · PROGRESAR Y FRENAR', 'Pasos cortos al bajar la velocidad.')]
+panels = [(26, 105, 'ankle', '01 · TOBILLO', 'Talón apoyado, avanzá sin forzar.'), (462, 105, 'hip', '02 · CADERA', 'Abrir y cerrar con control.'), (26, 365, 'balance', '03 · FUERZA Y EQUILIBRIO', 'Rodilla estable, rango cómodo.'), (462, 365, 'brake', '04 · PROGRESAR Y FRENAR', 'Pasos cortos al bajar la velocidad.')]
 for x, y, pose, title, caption in panels:
     parts += [f'<rect x="{x}" y="{y}" width="412" height="245" rx="12" fill="#193d31" stroke="#7aa68b" stroke-opacity=".25"/><text x="{x + 18}" y="{y + 29}" fill="#c8d9b8" font-family="Arial,sans-serif" font-size="16" font-weight="700">{title}</text>', athlete(x + 207, y + 146, pose), f'<text x="{x + 206}" y="{y + 225}" text-anchor="middle" fill="#c0d9cc" font-family="Arial,sans-serif" font-size="16">{caption}</text>']
 parts.append('</svg>')

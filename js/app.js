@@ -16,6 +16,7 @@ const app = {
     },
     showScreen(screen) {
         if (!document.getElementById(`screen-${screen}`)) return;
+        if (screen !== 'trainings') window.trainingsManager?.stopWarmup();
         if (screen !== 'trainings' && location.hash.startsWith('#entrenamientos')) history.replaceState(null, '', location.pathname + location.search);
         document.querySelectorAll('.screen').forEach(element => element.classList.toggle('active', element.id === `screen-${screen}`));
         document.querySelectorAll('.nav-links [data-screen]').forEach(element => element.classList.toggle('active', element.dataset.screen === screen));
@@ -49,6 +50,7 @@ const app = {
         const missing = players.filter(player => !Palometas.parseDate(player.birthdate)).length;
         document.getElementById('birthdays-missing').textContent = missing ? `${missing} jugadora(s) sin fecha de nacimiento válida.` : '';
         if (window.matchesManager) matchesManager.updateHomeMatches();
+        window.trainingsManager?.refreshRoster();
     },
     exportBirthdays(players = playersManager.players) {
         if (!Palometas.birthdays(players).length) { this.notify('No hay cumpleaños válidos para exportar.', true); return; }

@@ -116,3 +116,42 @@ dialog.training-media-dialog { width:min(1150px,calc(100vw - 24px)); }
 @media (max-width:900px) { .training-workspace { grid-template-columns:1fr; }.training-timeline { position:static; flex-direction:row; overflow-x:auto; padding-bottom:10px; }.training-timeline-step { flex:0 0 185px; padding:12px; }.training-guide-intro { grid-template-columns:1fr; }.training-count-control { max-width:400px; }.training-home-card { flex-wrap:wrap; }.training-preparation-grid { grid-template-columns:1fr; gap:20px; } }
 @media (max-width:600px) { .training-guide-intro { padding:20px; gap:16px; }.training-stage { padding:16px; }.training-instruction-grid { grid-template-columns:1fr; gap:18px; }.training-home-card { padding:20px; }.training-home-card h2 span { display:block; margin-top:5px; }.training-home-card .btn { width:100%; }.training-session-info { padding:22px; }.training-reels-grid { grid-template-columns:1fr 1fr; }.training-reels-grid a { padding:12px 10px; gap:8px; font-size:.85rem; }.training-references { padding-inline:14px; }.training-media figcaption { padding:12px; }.training-download { margin-left:0; }.training-step-footer > span { order:3; width:100%; text-align:left; }.training-step-footer .btn { font-size:.8rem; }.training-legend { gap:8px 12px; }.training-rolebar { align-items:flex-start; }.training-stage-topline { font-size:.73rem; }.training-station-body { padding-inline:12px; } }
 @media (prefers-reduced-motion:reduce) { #screen-trainings { animation:none; } }
+.training-motion svg { display:block; width:100%; height:auto; }
+.training-warmup { margin:20px 0 28px; }
+.training-warmup > label { display:block; font-size:.9rem; font-weight:600; margin-bottom:10px; }
+.training-warmup > select { display:block; width:100%; padding:12px; font-size:1rem; }
+.training-warmup-dose { padding:12px 0 0; color:#b7d3bf; line-height:1.6; font-size:.86rem; }
+.training-warmup-dose strong { color:#e4edd9; }
+.training-warmup-navigation { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:18px; }
+.training-warmup-navigation > span { color:#a7b3a8; font-size:.75rem; }
+.training-warmup-navigation button:disabled { cursor:default; }
+.training-count-control select:disabled { cursor:default; opacity:.8; }
+.training-roster > p { font-size:.88rem; color:#bbb6c2; line-height:1.7; margin-bottom:18px; }
+.training-roster-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr)); gap:8px; max-height:380px; overflow:auto; margin-bottom:18px; padding-right:4px; }
+.training-roster-player { display:flex; align-items:center; gap:10px; min-height:64px; padding:12px; border:1px solid #ffffff20; border-radius:8px; cursor:pointer; background:#ffffff03; }
+.training-roster-player:has(input:checked) { border-color:#c36b90; background:#4b243546; }
+.training-roster-player input[type="checkbox"] { width:18px; height:18px; padding:0; margin:0; flex:0 0 18px; accent-color:#d3507d; cursor:pointer; }
+.training-roster-player strong { display:block; color:#e6dce6; font-size:.87rem; }
+.training-roster-player small { display:block; color:#a8a1b0; font-size:.72rem; line-height:1.5; margin-top:4px; }
+.training-keeper-select { display:block; margin:12px 0 8px; font-size:.88rem; }
+#training-keeper-select { width:min(100%,400px); }
+.training-roster-actions { justify-content:flex-start; margin:18px 0; }
+.training-roster-actions > strong { font-size:.82rem; color:#cbbacb; margin-right:auto; }
+#training-roster-error:empty { display:none; }
+.training-roster #training-roster-picker > .text-muted { font-size:.78rem; margin:12px 0 18px; line-height:1.65; }
+.training-lineups { margin:26px 0; }
+.training-lineups > p { color:#beb7c4; line-height:1.7; font-size:.9rem; }
+.training-lineups .training-lineup-hint { color:#a49aaa; font-size:.78rem; margin-top:10px; }
+.training-lineup-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:12px; margin-top:18px; }
+.training-lineup-team { padding:16px; background:#ffffff03; border:1px solid #ffffff18; border-top:3px solid #ce3158; border-radius:9px; min-width:0; }
+.training-lineup-team.blue { border-top-color:#318fd8; }.training-lineup-team.neutral { border-top-color:#e0ddcb; }.training-lineup-team.keeper { border-top-color:#f4aa3b; }
+.training-lineup-team table { width:100%; border-collapse:collapse; margin:10px 0 4px; font-size:.78rem; }
+.training-lineup-team th,.training-lineup-team td { text-align:left; padding:10px 6px; border-bottom:1px solid #ffffff13; line-height:1.55; vertical-align:top; overflow-wrap:anywhere; }
+.training-lineup-team thead th { color:#a798ab; font-weight:400; font-size:.7rem; padding-top:0; }
+.training-lineup-team tbody th { width:53%; color:#cdbed0; font-weight:400; }
+.training-lineup-team th b { color:#f2d9e8; display:inline-block; margin-right:4px; }
+.training-lineup-team td { color:#b2c7b4; }
+.training-lineup-team td strong { display:block; color:#e4eddd; font-weight:600; }
+.training-lineup-team td small { display:block; color:#a39ba9; font-size:.68rem; margin-top:4px; }
+.training-lineup-team > p { color:#a59aaa; font-size:.73rem; line-height:1.6; margin-top:12px; }
+@media (max-width:600px) { .training-roster-grid { grid-template-columns:1fr; }.training-warmup-navigation > span { order:3; width:100%; text-align:center; }.training-warmup-navigation .btn { font-size:.7rem; }.training-lineup-team { padding:12px; } }
