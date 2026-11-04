@@ -1,9 +1,10 @@
-# Palometas Sub 17: agenda, fixture y jugadas
+# Palometas Sub 17: agenda, entrenamientos, fixture y jugadas
 
-La web publicada desde la raíz del repositorio concentra el uso cotidiano en Inicio, Plantel Sub 17, Fixture y Jugadas. Conserva la configuración de Firebase y el acceso existente del cuerpo técnico. Los módulos de escritorio y la copia `web_app/` no cambian.
+La web publicada desde la raíz del repositorio concentra el uso cotidiano en Inicio, Plantel Sub 17, Entrenamientos, Fixture y Jugadas. Conserva la configuración de Firebase y el acceso existente del cuerpo técnico. Los módulos de escritorio y la copia `web_app/` no cambian.
 
 ## Uso
 
+- **Entrenamientos:** sesiones nativas de la página, ordenadas por fecha de carga y con esa fecha como nombre. La primera entrada es **04/11/2026**, de 19 a 21 h: siete pasos con horarios, consignas, pausas, preparación del campo, correcciones y variantes. El selector indica jugadoras de campo (9–12), y cuenta a la arquera aparte desde las 20 h; las 10–12 habituales pueden ser 9–11 de campo más arquera. La primera hora no necesita arquera, y la segunda utiliza una sola. Tres estaciones sustituyen a las cuatro del PDF anterior para formar grupos de 3–4. Los esquemas SVG ajustan el reparto a la cantidad elegida; los seis GIFs muestran ejemplos con sus cantidades identificadas. El movimiento se carga al pulsar Ver movimiento y se detiene al volver al armado; el armado se puede ampliar y los GIFs descargar. La última sesión también tiene un acceso desde Inicio. Los nueve reels compartidos quedan enlazados como referencias sin atribuirles contenido que Instagram no permitió revisar.
 - **Plantel:** todas las altas y ediciones pertenecen a Sub 17. Las demás categorías no se muestran en el plantel, en los cumpleaños ni en el fixture.
 - **Fotos:** desde la ficha se puede seleccionar una imagen JPG, PNG o WebP de hasta 25 MB, mover y ajustar un recuadro cuadrado, acercar o girar la foto y confirmar el recorte. Se guarda únicamente el retrato de 320 × 320 píxeles al guardar la ficha; la foto completa del plantel permanece en el dispositivo. También se puede quitar la foto antes de guardar.
 - **Borrar jugadora:** la ficha de una jugadora existente incluye el botón Borrar jugadora y una confirmación con su nombre. El borrado elimina su registro del plantel, incluido su retrato, sin modificar los resultados y las goleadoras ya guardados en el fixture.
@@ -16,10 +17,14 @@ La web publicada desde la raíz del repositorio concentra el uso cotidiano en In
 
 La lógica de la versión inicial cuenta con pruebas en `tests/sub17-core.test.cjs` para filtros de categoría, fechas y cambio de año, zona horaria argentina, años bisiestos, escape y plegado UTF-8 de iCalendar, resultados optativos, goleadoras y validación de GIFs.
 
-Desde la indicación del usuario del 4 de noviembre de 2026, los cambios se entregan sin ejecutar pruebas automatizadas ni comprobaciones de funcionamiento. El usuario realiza las pruebas. Esta preferencia también está registrada en `AGENTS.md` para continuar trabajando con Codex. La incorporación de fotos con recorte y el borrado individual de jugadoras se entregan bajo esta modalidad.
+Desde la indicación del usuario del 4 de noviembre de 2026, los cambios se entregan sin ejecutar pruebas automatizadas ni comprobaciones de funcionamiento. El usuario realiza las pruebas. Esta preferencia también está registrada en `AGENTS.md` para continuar trabajando con Codex. Las fotos con recorte, el borrado individual y la sección Entrenamientos se entregan bajo esta modalidad. La generación de los archivos de imagen y la consulta del estado de publicación no prueban la aplicación.
 
 La revisión visual se realizó con datos ficticios y un adaptador de base de datos en memoria: 18 jugadoras (2 arqueras), categorías excluidas, partidos con y sin fecha, resultado con goleadoras parciales, incorporación desde Sub 15 y carga de un archivo GIF. El entorno de prueba y sus datos no forman parte de los archivos publicados.
 
 La UI de exportación respondió al botón de descarga, pero el navegador de prueba no devolvió el archivo descargado. La estructura del archivo y sus alarmas se verifican en las pruebas unitarias; falta comprobar la importación y los avisos en la agenda real del entrenador. No se modificaron registros reales ni se probaron escrituras contra el Firebase de producción.
 
 Antes de usar la limpieza con datos reales, identificar las Sub 15 que se incorporan y conservar el respaldo de los registros que se elijan borrar. La revisión prepara los cambios de código; no borra categorías automáticamente al publicar.
+
+## Agregar próximas sesiones
+
+Las sesiones se preparan en la conversación y se incorporan al arreglo `PALOMETAS_TRAININGS` de `js/training-data.js`, con un `id` único, `uploadedAt` (fecha de carga), `date` (fecha de práctica) y sus pasos. Las imágenes se guardan en `images/entrenamientos/<id>/`. No se carga un PDF ni se crean registros de jugadoras para publicar una sesión. Cada sesión y paso tienen enlace directo: `#entrenamientos/2026-11-04/paso-1`. El módulo `training-boards.js` dibuja los repartos y `trainings.js` muestra el recorrido. `scripts/generate-training-media.py` conserva el origen reproducible de los seis GIFs, sus vistas iniciales y las dos láminas SVG de esta fecha (Pillow y DejaVu Sans).

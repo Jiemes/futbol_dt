@@ -2,12 +2,12 @@ const app = {
     showAllBirthdays: false,
     init() {
         document.querySelectorAll('[data-screen]').forEach(item => {
-            item.addEventListener('click', () => this.showScreen(item.dataset.screen));
+            item.addEventListener('click', () => item.dataset.screen === 'trainings' ? trainingsManager.showCatalog() : this.showScreen(item.dataset.screen));
             item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); } });
         });
         document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.close).close()));
         document.getElementById('birthday-toggle').addEventListener('click', () => { this.showAllBirthdays = !this.showAllBirthdays; this.updateDashboard(); });
-        playersManager.init(); matchesManager.init(); libraryManager.init();
+        playersManager.init(); matchesManager.init(); libraryManager.init(); trainingsManager.init();
         this.updateDashboard();
     },
     async refresh() {
@@ -15,6 +15,8 @@ const app = {
         this.updateDashboard();
     },
     showScreen(screen) {
+        if (!document.getElementById(`screen-${screen}`)) return;
+        if (screen !== 'trainings' && location.hash.startsWith('#entrenamientos')) history.replaceState(null, '', location.pathname + location.search);
         document.querySelectorAll('.screen').forEach(element => element.classList.toggle('active', element.id === `screen-${screen}`));
         document.querySelectorAll('.nav-links [data-screen]').forEach(element => element.classList.toggle('active', element.dataset.screen === screen));
         document.getElementById('sidebar').classList.remove('active');
