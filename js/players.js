@@ -1,383 +1,121 @@
 const playersManager = {
     players: [],
-    currentFilter: 'Todas',
-    cropper: null,
-
-    async init() {
-        await this.loadPlayers();
-        this.addEventListeners();
+    allPlayers: [],
+    init() {
+        document.getElementById('add-player-form').addEventListener('submit', event => { event.preventDefault(); this.savePlayer(); });
+        document.getElementById('player-search').addEventListener('input', () => this.renderPlayersList());
     },
-
-    addEventListeners() {
-        const playerForm = document.getElementById('add-player-form');
-        if (playerForm) {
-            playerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.savePlayer();
-            });
-        }
-    },
-
     async loadPlayers() {
-        if (!window.db) return;
+        if (!window.db || !window.auth?.currentUser) return;
         try {
-            const snapshot = await window.db.collection('players').orderBy('alias', 'asc').get();
-            this.players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const snapshot = await window.db.collection('players').get();
+            this.allPlayers = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            this.players = this.allPlayers.filter(Palometas.isSub17).sort((a, b) => Palometas.nameOf(a).localeCompare(Palometas.nameOf(b), 'es'));
             this.renderPlayersList();
-
-            if (window.app && window.app.loadPlayers) window.app.loadPlayers();
-            if (window.attendanceManager) window.attendanceManager.renderAttendanceList();
-            if (window.statsManager) window.statsManager.renderStats();
-            if (window.tacticBoard) window.tacticBoard.renderPlayerPool();
+            document.getElementById('review-categories').hidden = !auth.currentUser.isOwner || !this.allPlayers.some(player => !Palometas.isSub17(player));
+            app.updateDashboard();
+            // The existing login calls loadPlayers(); hydrate the remaining panels here.
+            await Promise.allSettled([matchesManager.loadMatches(), libraryManager.loadExercises()]);
         } catch (error) {
-            console.error("Error cargando jugadoras:", error);
+            console.error(error); app.notify('No se pudo cargar el plantel. Revisá la conexión y volvé a intentar.', true);
         }
     },
-
-    setFilter(cat, btn) {
-        this.currentFilter = cat;
-        document.querySelectorAll('.players-filters .filter-chip').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-        this.renderPlayersList();
-    },
-
-    handlePhotoSelection(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.getElementById('cropper-image');
-                img.src = e.target.result;
-
-                document.getElementById('p-photo-container').style.display = 'none';
-                document.getElementById('cropper-wrapper').style.display = 'block';
-
-                if (this.cropper) this.cropper.destroy();
-
-                this.cropper = new Cropper(img, {
-                    aspectRatio: 1,
-                    viewMode: 1,
-                    autoCropArea: 1,
-                    responsive: true
-                });
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    },
-
-    applyCrop() {
-        if (!this.cropper) return;
-        const canvas = this.cropper.getCroppedCanvas({ width: 200, height: 200 });
-        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        document.getElementById('p-photo-preview').src = croppedDataUrl;
-        document.getElementById('p-photo-url').value = croppedDataUrl;
-        this.cancelCrop();
-    },
-
-    cancelCrop() {
-        if (this.cropper) {
-            this.cropper.destroy();
-            this.cropper = null;
-        }
-        document.getElementById('cropper-wrapper').style.display = 'none';
-        document.getElementById('p-photo-container').style.display = 'flex';
-    },
-
-    async savePlayer() {
-        const editId = document.getElementById('p-edit-id').value;
-        const alias = document.getElementById('p-alias').value;
-        const name = document.getElementById('p-name').value;
-        const dni = document.getElementById('p-dni').value;
-        const birthdate = document.getElementById('p-birthdate').value;
-        const cat = document.getElementById('p-cat').value;
-        const pos1 = document.getElementById('p-pos1').value;
-        const pos2 = document.getElementById('p-pos2').value;
-        const weight = document.getElementById('p-weight').value;
-        const height = document.getElementById('p-height').value;
-        const apto = document.getElementById('p-apto').value;
-        const insurance = document.getElementById('p-insurance').value;
-        const photo = document.getElementById('p-photo-url').value;
-        const phone = document.getElementById('p-phone') ? document.getElementById('p-phone').value : null;
-        const emergency = document.getElementById('p-emergency') ? document.getElementById('p-emergency').value : null;
-
-        if (!alias || !window.db) return;
-
-        const playerData = {
-            alias: alias,
-            full_name: name || '',
-            dni: dni || null,
-            birthdate: birthdate || null,
-            category: cat,
-            position: pos1,
-            second_position: pos2 || '-',
-            weight: weight ? parseFloat(weight) : null,
-            height: height ? parseFloat(height) : null,
-            physical_status: apto || 'Apto',
-            insurance: insurance || null,
-            phone: phone,
-            emergency_contact: emergency,
-            photo_url: photo || null
-        };
-
-        try {
-            if (editId) {
-                await window.db.collection('players').doc(editId).update(playerData);
-            } else {
-                await window.db.collection('players').add(playerData);
-            }
-            await this.loadPlayers();
-            this.resetForm();
-            this.showAddModal(false);
-        } catch (error) {
-            console.error("Error al guardar:", error);
-            alert("Error al guardar jugadora.");
-        }
-    },
-
-    resetForm() {
-        document.getElementById('add-player-form').reset();
-        document.getElementById('p-edit-id').value = '';
-        document.getElementById('p-photo-preview').src = 'images/camiseta.png';
-        document.getElementById('p-photo-url').value = '';
-        document.getElementById('player-modal-title').textContent = 'Nueva Jugadora';
-        document.getElementById('player-submit-btn').textContent = 'Guardar Jugadora';
-    },
-
-    async editPlayer(id, e) {
-        if (e) e.stopPropagation();
-        const p = this.players.find(player => player.id === id);
-        if (!p) return;
-
-        this.showDetailModal(false); // Close detail if open
-
-        document.getElementById('p-edit-id').value = p.id;
-        document.getElementById('p-alias').value = p.alias;
-        document.getElementById('p-name').value = p.full_name || '';
-        document.getElementById('p-dni').value = p.dni || '';
-        document.getElementById('p-birthdate').value = p.birthdate || '';
-        document.getElementById('p-cat').value = p.category;
-        document.getElementById('p-pos1').value = p.position || 'Arquera';
-        document.getElementById('p-pos2').value = p.second_position || '-';
-        document.getElementById('p-weight').value = p.weight || '';
-        document.getElementById('p-height').value = p.height || '';
-        document.getElementById('p-apto').value = p.physical_status || 'Apto';
-        document.getElementById('p-insurance').value = p.insurance || '';
-        document.getElementById('p-phone').value = p.phone || '';
-        document.getElementById('p-emergency').value = p.emergency_contact || '';
-        document.getElementById('p-photo-preview').src = p.photo_url || 'images/camiseta.png';
-        document.getElementById('p-photo-url').value = p.photo_url || '';
-
-        document.getElementById('player-modal-title').textContent = 'Editar Jugadora';
-        document.getElementById('player-submit-btn').textContent = 'Actualizar Datos';
-
-        this.showAddModal(true);
-    },
-
-    async deletePlayer(id, e) {
-        if (e) e.stopPropagation();
-        if (confirm("¿Estás seguro de eliminar a esta jugadora?") && window.db) {
-            try {
-                await window.db.collection('players').doc(id).delete();
-                await this.loadPlayers();
-                this.showDetailModal(false);
-            } catch (error) {
-                console.error("Error al eliminar:", error);
-            }
-        }
-    },
-
     renderPlayersList() {
         const grid = document.getElementById('players-grid');
-        if (!grid) return;
-
-        grid.innerHTML = '';
-        let filtered = this.players;
-        if (this.currentFilter !== 'Todas') {
-            filtered = this.players.filter(p => p.category === this.currentFilter);
+        const search = document.getElementById('player-search').value.toLocaleLowerCase('es');
+        const players = this.players.filter(player => [Palometas.nameOf(player), player.full_name, player.position, player.second_position].join(' ').toLocaleLowerCase('es').includes(search));
+        grid.replaceChildren();
+        if (!players.length) grid.innerHTML = '<p class="empty-state">No hay jugadoras para mostrar. Podés agregar las incorporaciones o revisar otras categorías.</p>';
+        for (const player of players) {
+            const card = document.createElement('article'); card.className = 'player-card';
+            const birthday = Palometas.parseDate(player.birthdate) ? Palometas.formatDate(player.birthdate) : 'Cumpleaños sin completar';
+            const photo = Palometas.imageURL(player.photo_url);
+            card.innerHTML = (photo ? '<div class="card-avatar"><img src="' + Palometas.escapeHTML(photo) + '" alt="" loading="lazy"></div>' : '') +
+                '<div class="card-info"><h2>' + Palometas.escapeHTML(Palometas.nameOf(player)) + '</h2><p>' + Palometas.escapeHTML(player.position || 'Posición sin definir') + '</p><p>' + Palometas.escapeHTML(birthday) + '</p><div class="button-row"><button class="btn btn-secondary btn-sm">Ver / editar datos</button></div></div>';
+            card.querySelector('button').addEventListener('click', () => this.editPlayer(player.id)); grid.appendChild(card);
         }
-
-        if (filtered.length === 0) {
-            grid.innerHTML = '<p class="text-muted" style="grid-column: 1/-1; text-align: center; padding: 40px;">No hay jugadoras en esta categoría.</p>';
-            return;
-        }
-
-        filtered.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'player-card';
-            card.onclick = () => this.showPlayerDetail(p.id);
-            card.innerHTML = `
-                <div class="card-avatar">
-                    <img src="${p.photo_url || 'images/camiseta.png'}" alt="Foto" onerror="this.src='images/camiseta.png'">
-                </div>
-                <div class="card-info">
-                    <h4>${p.alias}</h4>
-                </div>
-            `;
-            grid.appendChild(card);
-        });
     },
-
-    calculateAge(birthdate) {
-        if (!birthdate) return '-';
-        const birth = new Date(birthdate);
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
-        return age;
-    },
-
-    async showPlayerDetail(id) {
-        const player = this.players.find(p => p.id === id);
+    editPlayer(id) {
+        const player = id ? this.players.find(item => item.id === id) : {};
         if (!player) return;
-
-        let attendancePct = 0;
-        let presenceCount = 0;
-
+        const form = document.getElementById('add-player-form'); form.reset();
+        document.getElementById('p-edit-id').value = player.id || '';
+        document.getElementById('p-alias').value = player.alias || player.full_name || '';
+        document.getElementById('p-name').value = player.full_name || '';
+        document.getElementById('p-birthdate').value = player.birthdate || '';
+        document.getElementById('p-birthdate').max = Palometas.todayISO();
+        const position = document.getElementById('p-position');
+        if (player.position && ![...position.options].some(option => option.value === player.position)) position.add(new Option(player.position, player.position));
+        position.value = player.position || '';
+        document.getElementById('p-second-position').value = player.second_position === '-' ? '' : player.second_position || '';
+        document.getElementById('p-phone').value = player.phone || '';
+        document.getElementById('p-emergency').value = player.emergency_contact || '';
+        document.getElementById('player-title').textContent = id ? 'Datos de la jugadora' : 'Agregar jugadora a Sub 17';
+        document.getElementById('player-form-error').textContent = '';
+        document.getElementById('player-dialog').showModal();
+    },
+    async savePlayer() {
+        if (!window.db || !window.auth?.currentUser) return;
+        const button = document.getElementById('player-save'); if (button.disabled) return;
+        const errorElement = document.getElementById('player-form-error'); errorElement.textContent = '';
+        const birthdate = document.getElementById('p-birthdate').value;
+        const alias = document.getElementById('p-alias').value.trim();
+        if (!alias || (birthdate && (!Palometas.parseDate(birthdate) || birthdate > Palometas.todayISO()))) {
+            errorElement.textContent = 'Completá el nombre y revisá la fecha de nacimiento.'; return;
+        }
+        const data = { alias, full_name: document.getElementById('p-name').value.trim(), birthdate: birthdate || null, category: 'Sub17',
+            position: document.getElementById('p-position').value, second_position: document.getElementById('p-second-position').value.trim(),
+            phone: document.getElementById('p-phone').value.trim(), emergency_contact: document.getElementById('p-emergency').value.trim() };
+        const id = document.getElementById('p-edit-id').value;
+        button.disabled = true;
         try {
-            const snapshot = await window.db.collection('attendance').where('player_id', '==', id).get();
-            const attData = snapshot.docs.map(doc => doc.data());
-            const totalSessions = attData.length;
-            presenceCount = attData.filter(a => a.present).length;
-            attendancePct = totalSessions > 0 ? Math.round((presenceCount / totalSessions) * 100) : 0;
-        } catch (error) {
-            console.error("Error obteniendo asistencia:", error);
-        }
-
-        const content = document.getElementById('player-detail-content');
-        content.innerHTML = `
-            <div style="padding: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                    <h2 style="color:white; margin:0;">Ficha Técnica</h2>
-                    <button class="btn-icon" onclick="playersManager.showDetailModal(false)" style="color:white; font-size:1.5rem;"><i class="fas fa-times"></i></button>
-                </div>
-
-                <div style="text-align:center; margin-bottom: 20px;">
-                    <img src="${player.photo_url || 'images/camiseta.png'}" style="width:120px; height:120px; border-radius:50%; border:4px solid var(--primary-color); object-fit:cover;">
-                    <h2 style="color:white; margin-top:10px;">${player.alias}</h2>
-                    <p style="color:var(--text-muted);">${player.full_name || '-'}</p>
-                </div>
-
-                <div style="display:flex; gap:10px; margin-bottom:20px;">
-                    <button onclick="playersManager.editPlayer('${player.id}')" class="btn btn-primary" style="flex:1;"><i class="fas fa-edit"></i> Editar</button>
-                    <button onclick="playersManager.deletePlayer('${player.id}')" class="btn-icon delete" style="background:rgba(255,0,0,0.1); padding:10px; border-radius:8px;"><i class="fas fa-trash"></i></button>
-                </div>
-                
-                <div class="detail-stats" style="grid-template-columns: repeat(2, 1fr);">
-                    <div class="mini-stat"><span>${player.category}</span><small>Cat.</small></div>
-                    <div class="mini-stat"><span>${player.position || '-'}</span><small>Pos. 1</small></div>
-                    <div class="mini-stat"><span>${player.second_position || '-'}</span><small>Pos. 2</small></div>
-                    <div class="mini-stat"><span style="color:${player.physical_status === 'Apto' ? '#2ecc71' : '#e74c3c'}">${player.physical_status || 'Apto'}</span><small>Estado</small></div>
-                    <div class="mini-stat"><span>${player.weight || '-'} kg</span><small>Peso</small></div>
-                    <div class="mini-stat"><span>${player.height || '-'} cm</span><small>Alt.</small></div>
-                    <div class="mini-stat"><span>${attendancePct}%</span><small>Asist.</small></div>
-                    <div class="mini-stat"><span>${presenceCount}</span><small>Pres.</small></div>
-                </div>
-
-                <div class="personal-data" style="margin-top:20px; background: rgba(255,255,255,0.03); padding:15px; border-radius:12px;">
-                    <p><strong>DNI:</strong> ${player.dni || '-'}</p>
-                    <p><strong>Fecha Nac.:</strong> ${player.birthdate || '-'} (${this.calculateAge(player.birthdate)} años)</p>
-                    <p><strong>Obra Social:</strong> ${player.insurance || '-'}</p>
-                    <p><strong>Teléfono:</strong> ${player.phone || '-'}</p>
-                    <p><strong>Emergencias:</strong> ${player.emergency_contact || '-'}</p>
-                </div>
-
-                <button class="btn btn-secondary btn-block" style="margin-top:20px;" onclick="playersManager.showDetailModal(false)">
-                    <i class="fas fa-arrow-right"></i> Cerrar Panel
-                </button>
-            </div>
-        `;
-
-        this.showDetailModal(true);
+            if (id) await window.db.collection('players').doc(id).update(data);
+            else await window.db.collection('players').add(data);
+            await this.loadPlayers(); document.getElementById('player-dialog').close(); app.notify('Datos de la jugadora guardados.');
+        } catch (error) { console.error(error); errorElement.textContent = 'No se pudo guardar. Los datos siguen en el formulario para reintentar.'; }
+        finally { button.disabled = false; }
     },
-
-    showAddModal(show) {
-        console.log("showAddModal llamada con:", show);
-        const modal = document.getElementById('modal-player');
-        if (!modal) {
-            console.error("Error: No se encontró el elemento con ID 'modal-player'");
-            alert("Error interno: El modal no existe en el HTML.");
-            return;
+    reviewCategories() {
+        if (!window.auth?.currentUser?.isOwner) return;
+        const grid = document.getElementById('cleanup-list'); grid.replaceChildren();
+        for (const player of this.allPlayers.filter(item => !Palometas.isSub17(item))) {
+            const row = document.createElement('div'); row.className = 'cleanup-row';
+            const label = document.createElement('label'); label.textContent = Palometas.nameOf(player);
+            const small = document.createElement('small'); small.textContent = player.category || 'Sin categoría'; label.appendChild(small);
+            const select = document.createElement('select'); select.dataset.playerId = player.id; select.setAttribute('aria-label', 'Acción para ' + Palometas.nameOf(player));
+            for (const [value, name] of [['keep', 'Conservar'], ['promote', 'Incorporar a Sub 17'], ['delete', 'Borrar registro']]) select.add(new Option(name, value));
+            if (/^(1ra|primera|res|reserva)$/i.test(player.category || '')) select.value = 'delete';
+            row.append(label, select); grid.appendChild(row);
         }
-        if (show) {
-            console.log("Activando modal...");
-            modal.classList.add('active');
-            // Forzar display por si falla el CSS
-            modal.style.display = 'block';
-            modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            console.log("Cerrando modal...");
-            modal.classList.remove('active');
-            modal.style.display = 'none';
-            this.resetForm();
-            this.cancelCrop();
-        }
+        if (!grid.children.length) grid.innerHTML = '<p>No hay jugadoras de otras categorías.</p>';
+        document.getElementById('cleanup-error').textContent = '';
+        document.getElementById('cleanup-dialog').showModal();
     },
-
-    showDetailModal(show) {
-        const modal = document.getElementById('modal-player-detail');
-        if (modal) {
-            if (show) {
-                modal.classList.add('active');
-                modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                modal.classList.remove('active');
+    async applyCategoryChanges() {
+        if (!window.db || !window.auth?.currentUser?.isOwner) return;
+        const button = document.getElementById('cleanup-apply'); if (button.disabled) return;
+        const selected = [...document.querySelectorAll('#cleanup-list select')].filter(select => select.value !== 'keep').map(select => ({
+            player: this.allPlayers.find(player => player.id === select.dataset.playerId && !Palometas.isSub17(player)), action: select.value
+        })).filter(item => item.player);
+        if (!selected.length) { document.getElementById('cleanup-error').textContent = 'Elegí al menos un cambio.'; return; }
+        if (selected.length > 450) { document.getElementById('cleanup-error').textContent = 'Aplicá los cambios en grupos de hasta 450 registros.'; return; }
+        const deleted = selected.filter(item => item.action === 'delete').map(item => item.player);
+        const promoted = selected.filter(item => item.action === 'promote');
+        if (!confirm('Se incorporarán ' + promoted.length + ' jugadoras a Sub 17 y se borrarán ' + deleted.length + ' registros de otras categorías. ¿Aplicar estos cambios?')) return;
+        button.disabled = true;
+        try {
+            if (deleted.length) Palometas.download(JSON.stringify({ exported_at: new Date().toISOString(), players: deleted }, null, 2), 'application/json', 'respaldo-otras-categorias-' + Palometas.todayISO() + '.json');
+            const batch = window.db.batch();
+            for (const item of selected) {
+                const ref = window.db.collection('players').doc(item.player.id);
+                if (item.action === 'promote') batch.update(ref, { category: 'Sub17' });
+                else if (item.action === 'delete') batch.delete(ref);
             }
-        }
-    },
-
-    exportPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-
-        doc.setFontSize(22);
-        doc.setTextColor(128, 0, 32);
-        doc.text('Los Palometas FC - Plantilla Completa', 14, 20);
-
-        const categories = ['1ra', 'Res', 'Sub17'];
-        let startY = 30;
-
-        categories.forEach(cat => {
-            const catPlayers = this.players.filter(p => p.category === cat);
-            if (catPlayers.length === 0) return;
-
-            doc.setFontSize(16);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Categoría: ${cat}`, 14, startY);
-
-            const tableData = catPlayers.map(p => [
-                p.alias,
-                p.full_name || '-',
-                p.dni || '-',
-                p.birthdate || '-',
-                p.position || '-',
-                p.second_position || '-',
-                p.physical_status || 'Apto',
-                p.phone || '-',
-                p.emergency_contact || '-'
-            ]);
-
-            doc.autoTable({
-                startY: startY + 5,
-                head: [['Alias', 'Nombre', 'DNI', 'F. Nac', 'Pos 1', 'Pos 2', 'Estado', 'Teléfono', 'Emergencia']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [128, 0, 32] },
-                margin: { left: 14, right: 14 }
-            });
-
-            startY = doc.lastAutoTable.finalY + 15;
-
-            if (startY > 180 && categories.indexOf(cat) < categories.length - 1) {
-                doc.addPage();
-                startY = 20;
-            }
-        });
-
-        doc.save('Plantilla_Los_Palometas.pdf');
+            await batch.commit(); await this.loadPlayers(); document.getElementById('cleanup-dialog').close();
+            app.notify('Plantel actualizado: ' + promoted.length + ' incorporaciones y ' + deleted.length + ' registros borrados.');
+        } catch (error) { console.error(error); document.getElementById('cleanup-error').textContent = 'No se aplicaron los cambios. Revisá los permisos y volvé a intentar.'; }
+        finally { button.disabled = false; }
     }
 };
-
 window.playersManager = playersManager;
-window.addEventListener('DOMContentLoaded', () => playersManager.init());
+

@@ -1,259 +1,116 @@
 const matchesManager = {
     matches: [],
-    currentFilter: 'Todas',
-    isInitialized: false,
-
-    async init() {
-        await this.loadMatches();
-        if (!this.isInitialized) {
-            this.addEventListeners();
-            this.isInitialized = true;
-        }
+    init() {
+        document.getElementById('match-form').addEventListener('submit', event => { event.preventDefault(); this.saveMatch(); });
+        document.getElementById('add-scorer').addEventListener('click', () => this.addScorer());
+        document.getElementById('match-tournament-filter').addEventListener('change', () => this.renderMatches());
     },
-
-    addEventListeners() {
-        const form = document.getElementById('match-form');
-        if (form) {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.saveMatch();
-            });
-        }
-    },
-
     async loadMatches() {
-        if (!window.db) return;
+        if (!window.db || !window.auth?.currentUser) return;
         try {
-            const snapshot = await window.db.collection('matches').orderBy('date').get();
-            this.matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            this.renderMatches();
-            this.renderStandings();
-            this.updateHomeMatches();
-        } catch (error) {
-            console.error("Error cargando partidos:", error);
-        }
+            const snapshot = await window.db.collection('matches').get();
+            this.matches = Palometas.sortMatches(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).filter(Palometas.isSub17));
+            const filter = document.getElementById('match-tournament-filter'), previous = filter.value;
+            filter.replaceChildren(new Option('Todos', ''));
+            [...new Set(this.matches.map(match => match.tournament).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')).forEach(name => filter.add(new Option(name, name)));
+            if ([...filter.options].some(option => option.value === previous)) filter.value = previous;
+            this.renderMatches(); this.updateHomeMatches();
+        } catch (error) { console.error(error); app.notify('No se pudo cargar el fixture. Revisá la conexión y volvé a intentar.', true); }
     },
-
-    async saveMatch() {
-        const id = document.getElementById('match-edit-id').value;
-        const datePart = document.getElementById('m-date-only').value;
-        const timePart = document.getElementById('m-time-only').value || "00:00";
-
-        const fullDate = `${datePart}T${timePart}:00`;
-
-        const matchData = {
-            tournament: document.getElementById('m-tournament').value || 'Torneo',
-            category: document.getElementById('m-category').value,
-            rival: document.getElementById('m-rival').value,
-            date: fullDate,
-            condition: document.getElementById('m-condition').value,
-            location: document.getElementById('m-location').value,
-            score_local: document.getElementById('m-score-local').value ? parseInt(document.getElementById('m-score-local').value) : null,
-            score_rival: document.getElementById('m-score-rival').value ? parseInt(document.getElementById('m-score-rival').value) : null,
-            observations: document.getElementById('m-observations').value || ''
-        };
-
-        try {
-            if (id) {
-                await window.db.collection('matches').doc(id).update(matchData);
-            } else {
-                await window.db.collection('matches').add(matchData);
-            }
-            await this.loadMatches();
-            this.showAddModal(false);
-        } catch (error) {
-            console.error("Error al guardar partido:", error);
-            alert("Error al guardar partido.");
-        }
-    },
-
-    setFilter(cat, btn) {
-        this.currentFilter = cat;
-        document.querySelectorAll('#screen-matches .filter-chip').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-        this.renderMatches();
-    },
-
     renderMatches() {
-        const grid = document.getElementById('matches-grid');
-        if (!grid) return;
-
-        let filtered = this.matches;
-        if (this.currentFilter !== 'Todas') {
-            filtered = this.matches.filter(m => m.category === this.currentFilter);
-        }
-
-        grid.innerHTML = '';
-        if (filtered.length === 0) {
-            grid.innerHTML = '<p class="text-muted">No hay partidos registrados en esta categoría.</p>';
-            return;
-        }
-
-        filtered.forEach(m => {
-            const date = new Date(m.date);
-            const isPlayed = m.score_local !== null && m.score_rival !== null;
-            const hasTime = m.date.includes('T') && !m.date.endsWith('T00:00:00');
-
-            const card = document.createElement('div');
-            card.className = 'config-card';
-            card.style.borderLeft = `5px solid ${isPlayed ? 'var(--primary-color)' : 'var(--accent-color)'}`;
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                    <div>
-                        <span class="badge" style="background:var(--primary-color);">${m.category}</span>
-                        <span class="badge" style="background:rgba(255,255,255,0.1); margin-left:5px;">${m.tournament || 'Torneo'}</span>
-                        <h4 style="margin-top:10px; font-size:1.2rem;">Palometas vs ${m.rival}</h4>
-                        <p style="font-size:0.85rem; color:var(--text-muted);">
-                            <i class="fas fa-calendar"></i> ${date.toLocaleDateString('es-AR')} ${hasTime ? ' - ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + 'hs' : ''}<br>
-                            <i class="fas fa-map-marker-alt"></i> ${m.location || 'Sin definir'} (${m.condition})
-                        </p>
-                    </div>
-                    <div style="text-align:right;">
-                        ${isPlayed ? `
-                            <div style="font-size:1.5rem; font-weight:bold; color:white;">
-                                ${m.score_local} - ${m.score_rival}
-                            </div>
-                            <span style="font-size:0.7rem; color:var(--accent-color);">FINALIZADO</span>
-                        ` : `
-                            <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--accent-color);">PENDIENTE</span>
-                        `}
-                    </div>
-                </div>
-                ${m.observations ? `<p style="font-size:0.8rem; background:rgba(255,255,255,0.03); padding:8px; border-radius:5px; margin-bottom:15px; border-left:2px solid var(--accent-color);">${m.observations}</p>` : ''}
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-secondary btn-sm" onclick="matchesManager.editMatch('${m.id}')">Editar / Resultado</button>
-                    <button class="btn btn-secondary btn-sm" style="color:#e74c3c; opacity:0.6;" onclick="matchesManager.deleteMatch('${m.id}')">Borrar</button>
-                </div>
-            `;
-            grid.appendChild(card);
-        });
+        const grid = document.getElementById('matches-grid'), tournament = document.getElementById('match-tournament-filter').value;
+        grid.replaceChildren();
+        const matches = this.matches.filter(match => !tournament || match.tournament === tournament);
+        if (!matches.length) grid.innerHTML = '<p class="empty-state">Todavía no hay partidos. Podés cargar los rivales aunque el día y el horario estén a confirmar.</p>';
+        for (const match of matches) grid.appendChild(this.matchCard(match));
     },
-
-    renderStandings() {
-        const container = document.getElementById('standings-container');
-        if (!container) return;
-
-        const played = this.matches.filter(m => m.score_local !== null).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        if (played.length === 0) {
-            container.innerHTML = '<p class="text-muted">Aún no hay resultados para mostrar.</p>';
-            return;
+    matchCard(match, compact = false) {
+        const escape = Palometas.escapeHTML;
+        const card = document.createElement('article'); card.className = 'config-card fixture-card';
+        const time = match.date?.includes('T') ? match.date.split('T')[1].slice(0, 5) : '';
+        const scorers = Array.isArray(match.scorers) ? match.scorers : [];
+        card.innerHTML = (match.tournament ? '<span class="badge">' + escape(match.tournament) + '</span>' : '') +
+            '<h2>' + escape(match.round ? 'Fecha ' + match.round + ' · ' : '') + 'Palometas vs. ' + escape(match.rival) + '</h2>' +
+            '<p class="text-muted">' + escape(Palometas.formatDate(match.date)) + (time && time !== '00:00' ? ' · ' + escape(time) + ' h' : '') + '<br>' +
+            escape([match.condition, match.location].filter(Boolean).join(' · ') || 'Cancha a confirmar') + '</p>' +
+            (Palometas.isPlayed(match) ? '<p class="result" aria-label="Resultado: Palometas ' + match.score_local + ', rival ' + match.score_rival + '">' + match.score_local + ' – ' + match.score_rival + '</p>' : '') +
+            (!compact && scorers.length ? '<p>Goles: ' + escape(scorers.map(row => row.name + (row.goals > 1 ? ' × ' + row.goals : '')).join(', ')) + '</p>' : '') +
+            (!compact && match.observations ? '<p class="text-muted">' + escape(match.observations) + '</p>' : '');
+        if (!compact) {
+            const buttons = document.createElement('div'); buttons.className = 'button-row';
+            const edit = document.createElement('button'); edit.className = 'btn btn-secondary btn-sm'; edit.textContent = 'Editar / cargar resultado';
+            edit.addEventListener('click', () => this.editMatch(match.id));
+            const remove = document.createElement('button'); remove.className = 'btn btn-secondary btn-sm btn-danger'; remove.textContent = 'Borrar';
+            remove.addEventListener('click', () => this.deleteMatch(match.id));
+            buttons.append(edit, remove); card.appendChild(buttons);
         }
-
-        let html = `
-            <table style="width:100%; border-collapse: collapse; font-size:0.85rem;">
-                <thead>
-                    <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); text-align:left; color:var(--accent-color);">
-                        <th style="padding:10px;">Fecha</th>
-                        <th style="padding:10px;">Cat.</th>
-                        <th style="padding:10px;">Rival</th>
-                        <th style="padding:10px;">RES</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        played.forEach(m => {
-            const date = new Date(m.date);
-            const win = m.score_local > m.score_rival;
-            const draw = m.score_local === m.score_rival;
-            const color = win ? '#2ecc71' : (draw ? '#ccc' : '#e74c3c');
-
-            html += `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding:10px;">${date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}</td>
-                    <td style="padding:10px;">${m.category}</td>
-                    <td style="padding:10px;">${m.rival}</td>
-                    <td style="padding:10px; font-weight:bold; color:${color}">${m.score_local}-${m.score_rival}</td>
-                </tr>
-            `;
-        });
-
-        html += '</tbody></table>';
-        container.innerHTML = html;
+        return card;
     },
-
     updateHomeMatches() {
-        const container = document.getElementById('home-next-matches');
-        if (!container) return;
-
-        const now = new Date();
-        const tenDaysLater = new Date();
-        tenDaysLater.setDate(now.getDate() + 10);
-
-        const future = this.matches
-            .filter(m => {
-                const d = new Date(m.date);
-                return d >= now && d <= tenDaysLater && m.score_local === null;
-            })
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        if (future.length === 0) {
-            container.innerHTML = '<p class="text-muted" style="font-size:0.9rem;">Sin partidos en los próximos 10 días.</p>';
-            return;
-        }
-
-        container.innerHTML = future.map(m => {
-            const date = new Date(m.date);
-            return `
-                <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px; margin-bottom:10px; border-left:3px solid var(--accent-color);">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="color:var(--accent-color);">${m.category}</strong> vs ${m.rival}<br>
-                            <small class="text-muted"><i class="fas fa-calendar"></i> ${date.toLocaleDateString('es-AR')}</small>
-                        </div>
-                        <span class="badge" style="background:rgba(255,255,255,0.05); font-size:0.7rem;">${m.condition}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        const container = document.getElementById('home-next-matches'); if (!container) return;
+        container.replaceChildren();
+        const today = Palometas.todayISO();
+        const next = this.matches.filter(match => !Palometas.isPlayed(match) && (!match.date || match.date.slice(0, 10) >= today)).slice(0, 3);
+        if (!next.length) container.innerHTML = '<p class="empty-state">Sin próximos partidos cargados.</p>';
+        next.forEach(match => container.appendChild(this.matchCard(match, true)));
     },
-
     editMatch(id) {
-        const m = this.matches.find(match => match.id === id);
-        if (!m) return;
-
-        document.getElementById('match-edit-id').value = m.id;
-        document.getElementById('m-tournament').value = m.tournament || '';
-        document.getElementById('m-category').value = m.category;
-        document.getElementById('m-rival').value = m.rival;
-
-        const dateObj = new Date(m.date);
-        document.getElementById('m-date-only').value = m.date.split('T')[0];
-        document.getElementById('m-time-only').value = m.date.includes('T') ? m.date.split('T')[1].substring(0, 5) : '';
-
-        document.getElementById('m-condition').value = m.condition;
-        document.getElementById('m-location').value = m.location || '';
-        document.getElementById('m-score-local').value = m.score_local !== null ? m.score_local : '';
-        document.getElementById('m-score-rival').value = m.score_rival !== null ? m.score_rival : '';
-        document.getElementById('m-observations').value = m.observations || '';
-
-        document.getElementById('match-modal-title').textContent = 'Editar Partido / Resultado';
-        this.showAddModal(true);
+        const match = id ? this.matches.find(item => item.id === id) : {};
+        if (!match) return;
+        document.getElementById('match-form').reset();
+        document.getElementById('match-edit-id').value = match.id || '';
+        for (const [field, value] of Object.entries({
+            'm-rival': match.rival, 'm-tournament': match.tournament, 'm-round': match.round,
+            'm-date': match.date?.slice(0, 10), 'm-time': match.date?.includes('T') ? match.date.split('T')[1].slice(0, 5) : '',
+            'm-condition': match.condition, 'm-location': match.location, 'm-score-local': match.score_local,
+            'm-score-rival': match.score_rival, 'm-observations': match.observations
+        })) document.getElementById(field).value = value ?? '';
+        document.getElementById('scorer-list').replaceChildren();
+        (Array.isArray(match.scorers) ? match.scorers : []).forEach(row => this.addScorer(row));
+        document.getElementById('match-details').open = Palometas.isPlayed(match) || Boolean(match.scorers?.length);
+        document.getElementById('match-title').textContent = id ? 'Editar partido' : 'Agregar partido';
+        document.getElementById('match-form-error').textContent = '';
+        document.getElementById('match-dialog').showModal();
     },
-
+    addScorer(value = {}) {
+        const row = document.createElement('div'); row.className = 'scorer-row';
+        const select = document.createElement('select'); select.setAttribute('aria-label', 'Goleadora');
+        select.add(new Option('Elegir jugadora', ''));
+        playersManager.players.forEach(player => select.add(new Option(Palometas.nameOf(player), player.id)));
+        if (value.player_id && ![...select.options].some(option => option.value === value.player_id)) select.add(new Option(value.name || 'Jugadora anterior', value.player_id));
+        select.value = value.player_id || '';
+        const goals = document.createElement('input'); goals.type = 'number'; goals.min = '1'; goals.max = '99'; goals.step = '1'; goals.value = value.goals ?? 1; goals.setAttribute('aria-label', 'Cantidad de goles');
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn btn-secondary btn-sm'; remove.textContent = 'Quitar';
+        remove.addEventListener('click', () => row.remove()); row.append(select, goals, remove);
+        document.getElementById('scorer-list').appendChild(row);
+    },
+    async saveMatch() {
+        if (!window.db || !window.auth?.currentUser) return;
+        const button = document.getElementById('match-save'); if (button.disabled) return;
+        const errorElement = document.getElementById('match-form-error'); errorElement.textContent = '';
+        button.disabled = true;
+        try {
+            const read = id => document.getElementById(id).value;
+            const scorers = [...document.querySelectorAll('#scorer-list .scorer-row')].map(row => ({
+                player_id: row.querySelector('select').value,
+                name: row.querySelector('select').selectedOptions[0]?.textContent || '',
+                goals: row.querySelector('input').value
+            }));
+            const data = Palometas.matchPayload({ rival: read('m-rival'), tournament: read('m-tournament'), round: read('m-round'),
+                date: read('m-date'), time: read('m-time'), condition: read('m-condition'), location: read('m-location'),
+                score_local: read('m-score-local'), score_rival: read('m-score-rival'), observations: read('m-observations') }, scorers);
+            const id = read('match-edit-id');
+            if (id) await window.db.collection('matches').doc(id).update(data);
+            else await window.db.collection('matches').add(data);
+            await this.loadMatches(); document.getElementById('match-dialog').close(); app.notify('Partido guardado.');
+        } catch (error) { console.error(error); errorElement.textContent = error.message || 'No se pudo guardar el partido.'; }
+        finally { button.disabled = false; }
+    },
     async deleteMatch(id) {
-        if (confirm("¿Eliminar este partido del calendario?") && window.db) {
-            try {
-                await window.db.collection('matches').doc(id).delete();
-                await this.loadMatches();
-            } catch (error) {
-                console.error("Error al eliminar partido:", error);
-            }
-        }
-    },
-
-    showAddModal(show) {
-        const modal = document.getElementById('modal-match');
-        if (show) modal.classList.add('active');
-        else {
-            modal.classList.remove('active');
-            document.getElementById('match-form').reset();
-            document.getElementById('match-edit-id').value = '';
-            document.getElementById('match-modal-title').textContent = 'Programar Partido';
-        }
+        if (!window.db || !window.auth?.currentUser || !this.matches.some(match => match.id === id) || !confirm('¿Borrar este partido del fixture?')) return;
+        try { await window.db.collection('matches').doc(id).delete(); await this.loadMatches(); app.notify('Partido borrado.'); }
+        catch (error) { console.error(error); app.notify('No se pudo borrar el partido.', true); }
     }
 };
-
 window.matchesManager = matchesManager;
-window.addEventListener('DOMContentLoaded', () => matchesManager.init());
+
