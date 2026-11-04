@@ -2,8 +2,10 @@ const playersManager = {
     players: [],
     allPlayers: [],
     init() {
+        playerPhotos.init();
         document.getElementById('add-player-form').addEventListener('submit', event => { event.preventDefault(); this.savePlayer(); });
         document.getElementById('player-search').addEventListener('input', () => this.renderPlayersList());
+        document.getElementById('player-delete').addEventListener('click', () => this.deletePlayer());
     },
     async loadPlayers() {
         if (!window.db || !window.auth?.currentUser) return;
@@ -39,6 +41,7 @@ const playersManager = {
         const player = id ? this.players.find(item => item.id === id) : {};
         if (!player) return;
         const form = document.getElementById('add-player-form'); form.reset();
+        playerPhotos.reset(player.photo_url);
         document.getElementById('p-edit-id').value = player.id || '';
         document.getElementById('p-alias').value = player.alias || player.full_name || '';
         document.getElementById('p-name').value = player.full_name || '';
@@ -51,6 +54,7 @@ const playersManager = {
         document.getElementById('p-phone').value = player.phone || '';
         document.getElementById('p-emergency').value = player.emergency_contact || '';
         document.getElementById('player-title').textContent = id ? 'Datos de la jugadora' : 'Agregar jugadora a Sub 17';
+        document.getElementById('player-delete').hidden = !id;
         document.getElementById('player-form-error').textContent = '';
         document.getElementById('player-dialog').showModal();
     },
@@ -67,13 +71,30 @@ const playersManager = {
             position: document.getElementById('p-position').value, second_position: document.getElementById('p-second-position').value.trim(),
             phone: document.getElementById('p-phone').value.trim(), emergency_contact: document.getElementById('p-emergency').value.trim() };
         const id = document.getElementById('p-edit-id').value;
+        if (!id || playerPhotos.changed) data.photo_url = playerPhotos.value || null;
         button.disabled = true;
+        document.getElementById('player-delete').disabled = true;
         try {
             if (id) await window.db.collection('players').doc(id).update(data);
             else await window.db.collection('players').add(data);
             await this.loadPlayers(); document.getElementById('player-dialog').close(); app.notify('Datos de la jugadora guardados.');
         } catch (error) { console.error(error); errorElement.textContent = 'No se pudo guardar. Los datos siguen en el formulario para reintentar.'; }
-        finally { button.disabled = false; }
+        finally { button.disabled = false; document.getElementById('player-delete').disabled = false; }
+    },
+    async deletePlayer() {
+        if (!window.db || !window.auth?.currentUser) return;
+        const id = document.getElementById('p-edit-id').value;
+        const player = this.players.find(item => item.id === id);
+        const remove = document.getElementById('player-delete'), save = document.getElementById('player-save');
+        if (!player || remove.disabled || save.disabled) return;
+        if (!confirm('¿Borrar a ' + Palometas.nameOf(player) + ' del plantel Sub 17? Esta acción elimina su ficha.')) return;
+        remove.disabled = true; save.disabled = true;
+        document.getElementById('player-form-error').textContent = '';
+        try {
+            await window.db.collection('players').doc(id).delete();
+            await this.loadPlayers(); document.getElementById('player-dialog').close(); app.notify('Jugadora borrada del plantel.');
+        } catch (error) { console.error(error); document.getElementById('player-form-error').textContent = 'No se pudo borrar la jugadora. Podés volver a intentar.'; }
+        finally { remove.disabled = false; save.disabled = false; }
     },
     reviewCategories() {
         if (!window.auth?.currentUser?.isOwner) return;

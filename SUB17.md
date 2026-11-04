@@ -5,6 +5,8 @@ La web publicada desde la raíz del repositorio concentra el uso cotidiano en In
 ## Uso
 
 - **Plantel:** todas las altas y ediciones pertenecen a Sub 17. Las demás categorías no se muestran en el plantel, en los cumpleaños ni en el fixture.
+- **Fotos:** desde la ficha se puede seleccionar una imagen JPG, PNG o WebP de hasta 25 MB, mover y ajustar un recuadro cuadrado, acercar o girar la foto y confirmar el recorte. Se guarda únicamente el retrato de 320 × 320 píxeles al guardar la ficha; la foto completa del plantel permanece en el dispositivo. También se puede quitar la foto antes de guardar.
+- **Borrar jugadora:** la ficha de una jugadora existente incluye el botón Borrar jugadora y una confirmación con su nombre. El borrado elimina su registro del plantel, incluido su retrato, sin modificar los resultados y las goleadoras ya guardados en el fixture.
 - **Incorporaciones y limpieza:** el propietario puede revisar otras categorías, incorporar las Sub 15 elegidas y borrar registros individualmente seleccionados. Conservar es la opción inicial para Sub 15 y categorías desconocidas. Primera y Reserva quedan preseleccionadas para borrar, pero no se modifica ningún dato al abrir la página. La aplicación solicita revisar la selección y ofrece un respaldo JSON antes de ejecutar una única operación atómica. Los datos adicionales de una jugadora se conservan al editar los campos visibles.
 - **Cumpleaños:** se muestran las próximas cinco fechas y se puede ampliar la lista. La agenda `.ics` incluye solo Sub 17, recurrencia anual, identificadores estables, zona horaria argentina y aviso a las 09:00. Los cumpleaños del 29 de febrero se recuerdan el último día de febrero. La importación del archivo se realiza en el calendario del entrenador y no constituye una sincronización: el calendario puede requerir activar avisos y una nueva importación puede duplicar eventos.
 - **Fixture:** alcanza con indicar el rival. Día, hora, torneo, número de fecha, cancha, resultado y goleadoras son optativos. Los goles se cargan como Palometas/rival tanto de local como de visitante. El resultado requiere ambos valores; 0–0 es válido. Se pueden registrar goleadoras sin resultado y se permite que falten autoras de algunos goles.
@@ -12,7 +14,9 @@ La web publicada desde la raíz del repositorio concentra el uso cotidiano en In
 
 ## Validación
 
-Ejecutar `node --test tests/sub17-core.test.cjs` para comprobar filtros de categoría, fechas y cambio de año, zona horaria argentina, años bisiestos, escape y plegado UTF-8 de iCalendar, resultados optativos, goleadoras y validación de GIFs.
+La lógica de la versión inicial cuenta con pruebas en `tests/sub17-core.test.cjs` para filtros de categoría, fechas y cambio de año, zona horaria argentina, años bisiestos, escape y plegado UTF-8 de iCalendar, resultados optativos, goleadoras y validación de GIFs.
+
+Desde la indicación del usuario del 4 de noviembre de 2026, los cambios se entregan sin ejecutar pruebas automatizadas ni comprobaciones de funcionamiento. El usuario realiza las pruebas. Esta preferencia también está registrada en `AGENTS.md` para continuar trabajando con Codex. La incorporación de fotos con recorte y el borrado individual de jugadoras se entregan bajo esta modalidad.
 
 La revisión visual se realizó con datos ficticios y un adaptador de base de datos en memoria: 18 jugadoras (2 arqueras), categorías excluidas, partidos con y sin fecha, resultado con goleadoras parciales, incorporación desde Sub 15 y carga de un archivo GIF. El entorno de prueba y sus datos no forman parte de los archivos publicados.
 

@@ -63,6 +63,24 @@ input, textarea, select { max-width: 100%; }
 .gif-viewer p { white-space: pre-line; }
 .btn-danger { color: #ffb7c1; }
 .empty-state { padding: 30px 12px; color: var(--text-muted); }
+.player-photo-editor { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 18px; padding: 16px; margin-bottom: 18px; background: var(--glass-bg); border-radius: 12px; }
+.player-photo-avatar { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 2px solid var(--accent-color); background: #101014; display: grid; place-items: center; text-align: center; }
+.player-photo-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.player-photo-avatar span { padding: 8px; color: var(--text-muted); font-size: .85rem; }
+.player-photo-fields { min-width: 0; }
+.player-photo-fields label { display: block; font-weight: 600; margin-bottom: 8px; }
+.player-photo-fields input[type="file"] { width: 100%; font-size: .85rem; padding: 8px; }
+.player-photo-fields p { margin-top: 8px; margin-bottom: 8px !important; font-size: .85rem; }
+.player-photo-fields .form-error:empty { display: none; }
+dialog.photo-crop-dialog { width: min(960px, calc(100vw - 28px)); }
+.photo-crop-workspace { width: 100%; height: clamp(240px, 52dvh, 480px); overflow: hidden; background: #08080b; border-radius: 10px; }
+.photo-crop-workspace > img { display: block; max-width: 100%; max-height: 100%; margin: auto; }
+#photo-crop-controls { border: 0; padding: 0; margin: 12px 0; min-width: 0; }
+.photo-crop-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.photo-crop-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.photo-crop-preview { width: 96px; height: 96px; border-radius: 50%; overflow: hidden; background: #101014; border: 2px solid var(--accent-color); }
+.photo-crop-preview img { display: block; max-width: none !important; max-height: none !important; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 1000px) { .home-columns { grid-template-columns: 1fr; } }
 @media (max-width: 600px) {
   .content-area { padding: 76px 16px 24px; }
@@ -71,5 +89,6 @@ input, textarea, select { max-width: 100%; }
   .birthday-item { grid-template-columns: 1fr; }
   .birthday-item button { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 5px; }
   .cleanup-row { grid-template-columns: 1fr; }
+  .player-photo-editor { grid-template-columns: 1fr; }
   .screen-header .button-row, .screen-header > .btn { width: 100%; }
 }

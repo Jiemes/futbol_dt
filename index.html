@@ -7,8 +7,9 @@
   <title>Palometas · Sub 17 femenina</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
   <link rel="stylesheet" href="css/style.css?v=sub17-2027">
-  <link rel="stylesheet" href="css/sub17.css?v=1">
+  <link rel="stylesheet" href="css/sub17.css?v=fotos-20261104">
 </head>
 <body class="dark-theme">
   <div id="login-overlay" class="login-overlay active">
@@ -74,6 +75,17 @@
   </main>
   <dialog id="player-dialog" class="editor" aria-labelledby="player-title">
     <form id="add-player-form"><div class="section-title"><h2 id="player-title">Agregar jugadora</h2><button type="button" class="btn btn-secondary btn-sm" data-close="player-dialog">Cerrar</button></div><input id="p-edit-id" type="hidden">
+      <div class="player-photo-editor">
+        <div class="player-photo-avatar"><img id="p-photo-preview" alt="Foto de la jugadora" hidden><span id="p-photo-empty">Sin foto</span></div>
+        <div class="player-photo-fields">
+          <label for="p-photo-file">Foto de la jugadora</label>
+          <input id="p-photo-file" type="file" accept="image/jpeg,image/png,image/webp">
+          <p class="text-muted">Podés elegir una foto de todo el plantel y recortar la cara de esta jugadora.</p>
+          <p id="p-photo-status" class="text-muted" role="status"></p>
+          <p id="p-photo-error" class="form-error" role="alert"></p>
+          <button id="p-photo-remove" type="button" class="btn btn-secondary btn-sm" hidden>Quitar foto</button>
+        </div>
+      </div>
       <div class="form-grid">
         <div class="input-group"><label for="p-alias">Nombre para mostrar</label><input id="p-alias" type="text" required maxlength="80"></div>
         <div class="input-group"><label for="p-name">Nombre completo</label><input id="p-name" type="text" maxlength="160"></div>
@@ -83,8 +95,24 @@
         <div class="input-group"><label for="p-phone">Teléfono</label><input id="p-phone" type="tel" ></div>
         <div class="input-group"><label for="p-emergency">Contacto adulto responsable</label><input id="p-emergency" type="text" maxlength="200"></div>
       </div>
-      <p id="player-form-error" class="form-error" role="alert"></p><button id="player-save" type="submit" class="btn btn-primary">Guardar jugadora</button>
+      <p id="player-form-error" class="form-error" role="alert"></p><div class="button-row"><button id="player-save" type="submit" class="btn btn-primary">Guardar jugadora</button><button id="player-delete" type="button" class="btn btn-secondary btn-danger" hidden>Borrar jugadora</button></div>
     </form>
+  </dialog>
+  <dialog id="photo-crop-dialog" class="editor photo-crop-dialog" aria-labelledby="photo-crop-title">
+    <div class="section-title"><h2 id="photo-crop-title">Seleccionar la cara de la jugadora</h2><button type="button" class="btn btn-secondary btn-sm" data-close="photo-crop-dialog">Cancelar</button></div>
+    <p>Mové el recuadro hasta la cara y ajustá sus bordes. También podés acercar o mover la foto.</p>
+    <div class="photo-crop-workspace"><img id="photo-crop-image" alt="Foto seleccionada para recortar"></div>
+    <p id="photo-crop-status" class="text-muted" role="status"></p><p id="photo-crop-error" class="form-error" role="alert"></p>
+    <fieldset id="photo-crop-controls" disabled>
+      <legend class="visually-hidden">Ajustar el recorte de la foto</legend>
+      <div class="photo-crop-toolbar">
+        <button type="button" class="btn btn-secondary btn-sm" data-photo-zoom="0.15">Acercar</button><button type="button" class="btn btn-secondary btn-sm" data-photo-zoom="-0.15">Alejar</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-photo-rotate="-90">Girar a la izquierda</button><button type="button" class="btn btn-secondary btn-sm" data-photo-rotate="90">Girar a la derecha</button>
+        <button id="photo-crop-reset" type="button" class="btn btn-secondary btn-sm">Restablecer</button>
+      </div>
+      <div class="photo-crop-footer"><div class="photo-crop-preview" role="img" aria-label="Vista previa de la foto de la jugadora"></div><button id="photo-crop-apply" type="button" class="btn btn-primary">Usar este recorte</button></div>
+    </fieldset>
+    <p class="text-muted">La foto se guardará en la ficha cuando pulses Guardar jugadora.</p>
   </dialog>
   <dialog id="cleanup-dialog" class="editor" aria-labelledby="cleanup-title">
     <div class="section-title"><h2 id="cleanup-title">Revisar otras categorías</h2><button type="button" class="btn btn-secondary btn-sm" data-close="cleanup-dialog">Cerrar</button></div>
@@ -129,7 +157,9 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/sub17-core.js?v=1"></script>
   <script src="js/auth.js?v=sub17-2027"></script>
-  <script src="js/players.js?v=sub17-2027"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+  <script src="js/player-photos.js?v=20261104"></script>
+  <script src="js/players.js?v=fotos-20261104"></script>
   <script src="js/matches.js?v=sub17-2027"></script>
   <script src="js/library.js?v=sub17-2027"></script>
   <script src="js/app.js?v=sub17-2027"></script>
