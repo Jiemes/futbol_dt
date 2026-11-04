@@ -92,3 +92,4 @@ dialog.photo-crop-dialog { width: min(960px, calc(100vw - 28px)); }
   .player-photo-editor { grid-template-columns: 1fr; }
   .screen-header .button-row, .screen-header > .btn { width: 100%; }
 }
+.library-media-note { color:#c0c8b6; font-size:.78rem; line-height:1.6; margin-top:12px; padding:10px 12px; border-left:2px solid #829d7c; background:#a6c19a09; }

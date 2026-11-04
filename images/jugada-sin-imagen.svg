@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-label="Ejercicio con consigna disponible">
+  <rect width="720" height="400" fill="#12382c"/>
+  <rect x="45" y="35" width="630" height="330" rx="10" fill="#1a503c" stroke="#86b99b" stroke-width="2"/>
+  <path d="M360 35V365 M45 110H130V290H45 M675 110H590V290H675" fill="none" stroke="#8bb89c" stroke-opacity=".4" stroke-width="2"/>
+  <circle cx="360" cy="200" r="72" fill="none" stroke="#8bb89c" stroke-opacity=".4" stroke-width="2"/>
+  <rect x="175" y="145" width="370" height="110" rx="14" fill="#102c25" stroke="#9abd9a" stroke-opacity=".4"/>
+  <text x="360" y="187" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" letter-spacing="4" fill="#b7cfac">PALOMETAS · EJERCICIO</text>
+  <text x="360" y="226" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" fill="#f2eedf">Leé la consigna</text>
+</svg>

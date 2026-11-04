@@ -1,6 +1,8 @@
 const libraryManager = {
     exercises: [],
     previewURL: null,
+    fallbackImage: 'images/jugada-sin-imagen.svg',
+    availableImages: new Set(["images/camiseta.png","images/entrenamientos/2026-11-04/01-control-color.gif","images/entrenamientos/2026-11-04/01-control-color.png","images/entrenamientos/2026-11-04/02-rondo-apoyos.gif","images/entrenamientos/2026-11-04/02-rondo-apoyos.png","images/entrenamientos/2026-11-04/03-duelo-apoyos.gif","images/entrenamientos/2026-11-04/03-duelo-apoyos.png","images/entrenamientos/2026-11-04/04-salida-sin-arquera.gif","images/entrenamientos/2026-11-04/04-salida-sin-arquera.png","images/entrenamientos/2026-11-04/05-salida-con-arquera.gif","images/entrenamientos/2026-11-04/05-salida-con-arquera.png","images/entrenamientos/2026-11-04/06-ataque-pase-atras.gif","images/entrenamientos/2026-11-04/06-ataque-pase-atras.png","images/entrenamientos/2026-11-04/movilidad.svg","images/entrenamientos/2026-11-04/portada.svg","images/logo.png","images/jugada-sin-imagen.svg"]),
     init() {
         document.getElementById('gif-form').addEventListener('submit', event => { event.preventDefault(); this.addExercise(); });
         document.getElementById('library-search').addEventListener('input', () => this.renderExercises());
@@ -21,7 +23,7 @@ const libraryManager = {
             result.value.docs.forEach(doc => {
                 const data = doc.data();
                 if (data.team_category && !Palometas.isSub17({ category: data.team_category })) return;
-                if (!Palometas.imageURL(data.gif_url)) return;
+                if (!data.title && !data.name && !Palometas.imageURL(data.gif_url)) return;
                 this.exercises.push({ ...data, id: doc.id, collection: collections[index], title: data.name || data.title || 'Jugada sin nombre', phase: data.phase || data.category || 'Jugada' });
             });
         });
@@ -29,15 +31,40 @@ const libraryManager = {
         this.renderExercises();
         if (results.some(result => result.status === 'rejected')) app.notify('No se pudo cargar una parte de las jugadas. Revisá la conexión y volvé a intentar.', true);
     },
+    mediaFor(item) {
+        const original = Palometas.imageURL(item.gif_url);
+        const fallback = (note, referenceOnly = false) => ({ src: this.fallbackImage, original, note, placeholder: true, referenceOnly });
+        if (!original) return fallback('Este ejercicio tiene su consigna disponible.');
+        if (item.imageUnavailable) return fallback('La imagen externa no está disponible, la consigna sigue acá.');
+        if (original.startsWith('data:')) return { src: original, original, placeholder: false };
+        const parsed = new URL(original, document.baseURI), base = new URL('.', document.baseURI);
+        if (parsed.origin === base.origin && parsed.pathname.startsWith(base.pathname)) {
+            const relative = parsed.pathname.slice(base.pathname.length);
+            if (!this.availableImages.has(relative)) return { ...fallback('El archivo de imagen no está disponible, podés leer la consigna.'), original: '' };
+            return { src: original, original, placeholder: false };
+        }
+        const seededReference = item.collection === 'exercises' && (/^(?:www\.)?entrenamientosdefutbol\.es$/i.test(parsed.hostname) || (/giphy\.com$/i.test(parsed.hostname) && parsed.pathname.includes('/media/v1.')));
+        if (seededReference) return fallback('Consigna disponible, la imagen guardada es una referencia externa antigua.', true);
+        return { src: original, original, placeholder: false };
+    },
+    handleImageError(image, item, notice) {
+        image.onerror = null;
+        item.imageUnavailable = true;
+        image.src = this.fallbackImage;
+        image.alt = 'Consigna del ejercicio disponible';
+        if (notice) { notice.textContent = 'La imagen no está disponible, podés seguir leyendo la consigna.'; notice.hidden = false; }
+    },
     renderExercises() {
         const grid = document.getElementById('library-grid'), search = document.getElementById('library-search').value.toLocaleLowerCase('es');
         grid.replaceChildren();
         const filtered = this.exercises.filter(item => [item.title, item.description, item.phase].join(' ').toLocaleLowerCase('es').includes(search));
         if (!filtered.length) grid.innerHTML = '<p class="empty-state">Todavía no hay jugadas para mostrar. Agregá un GIF preparado en nuestra conversación o buscá con otras palabras.</p>';
         for (const item of filtered) {
+            const media = this.mediaFor(item);
             const escape = Palometas.escapeHTML, card = document.createElement('article'); card.className = 'exercise-card';
-            card.innerHTML = '<button class="exercise-thumb" aria-label="' + escape('Ver ' + item.title) + '"><img loading="lazy" src="' + escape(Palometas.imageURL(item.gif_url)) + '" alt=""></button>' +
-                '<div class="exercise-info"><span class="badge">' + escape(item.phase) + '</span><h2>' + escape(item.title) + '</h2><p class="text-muted">' + escape(item.description || '') + '</p><div class="button-row"><button class="btn btn-secondary btn-sm">Ver jugada</button><button class="btn btn-secondary btn-sm btn-danger">Borrar</button></div></div>';
+            card.innerHTML = '<button class="exercise-thumb" aria-label="' + escape('Ver ' + item.title) + '"><img loading="lazy" src="' + escape(media.src) + '" alt=""></button>' +
+                '<div class="exercise-info"><span class="badge">' + escape(item.phase) + '</span><h2>' + escape(item.title) + '</h2><p class="text-muted">' + escape(item.description || '') + '</p><p class="library-media-note" ' + (media.placeholder ? '' : 'hidden') + '>' + escape(media.note || '') + '</p><div class="button-row"><button class="btn btn-secondary btn-sm">Ver ejercicio</button><button class="btn btn-secondary btn-sm btn-danger">Borrar</button></div></div>';
+            card.querySelector('img').onerror = event => this.handleImageError(event.currentTarget, item, card.querySelector('.library-media-note'));
             const buttons = card.querySelectorAll('button');
             buttons[0].addEventListener('click', () => this.showExerciseDetail(item));
             buttons[1].addEventListener('click', () => this.showExerciseDetail(item));
@@ -45,12 +72,15 @@ const libraryManager = {
         }
     },
     showExerciseDetail(item) {
+        const media = this.mediaFor(item);
         document.getElementById('gif-viewer-title').textContent = item.title;
-        document.getElementById('gif-viewer-description').textContent = item.description || '';
-        const image = document.getElementById('gif-viewer-image'); image.src = Palometas.imageURL(item.gif_url); image.alt = item.title;
-        const link = document.getElementById('gif-viewer-link'); link.href = Palometas.imageURL(item.gif_url);
-        if (item.gif_url.startsWith('data:')) { link.download = 'jugada-palometas.gif'; link.textContent = 'Descargar GIF'; }
-        else { link.removeAttribute('download'); link.textContent = 'Abrir GIF'; }
+        const description = document.getElementById('gif-viewer-description');
+        description.textContent = (item.description || '') + (media.note ? '\n\n' + media.note : '');
+        const image = document.getElementById('gif-viewer-image'); image.onerror = () => this.handleImageError(image, item, null); image.src = media.src; image.alt = media.placeholder ? 'Consigna disponible' : item.title;
+        const link = document.getElementById('gif-viewer-link'); link.hidden = !media.original;
+        if (media.original) link.href = media.original; else link.removeAttribute('href');
+        if (media.original.startsWith('data:')) { link.download = 'jugada-palometas.gif'; link.textContent = 'Descargar GIF'; }
+        else { link.removeAttribute('download'); link.textContent = media.placeholder ? 'Consultar referencia externa' : 'Abrir imagen'; }
         document.getElementById('gif-viewer').showModal();
     },
     editGif() {

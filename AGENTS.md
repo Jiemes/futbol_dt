@@ -9,4 +9,4 @@ Proyecto: ENTRENADOR DE FUTBOL FEMENINO SUB 17 PALOMETAS.
 - No mostrar comentarios ni enlaces de FIFA 11+ u otras fuentes de preparación en el recorrido. Mantener las consignas prácticas.
 - Usar posición habitual y segunda posición del plantel para sugerir grupos y puestos, sin modificar las fichas al organizar una práctica.
 - Mostrar los grupos por los nombres de las chicas, las posiciones sirven como criterio interno para repartirlas.
-- En activación, los primeros ocho movimientos forman una única secuencia continua de Movilidad. Mantener separados el ejercicio 9 de control con conos y el 10 de carrera con pared corta y cambio de corredora.
+- Movilidad es un bloque propio de 12 minutos con ocho movimientos continuos. Los ejercicios con pelota 9–13 van después, en un circuito técnico con el mismo armado de cinco conos por pareja o trío, sin preparar materiales entre variantes.

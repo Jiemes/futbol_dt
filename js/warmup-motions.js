@@ -100,8 +100,8 @@ window.WarmupMotions = (() => {
         }
         return keys[keys.length - 1][1];
     }
-    function cone(x, y, label = '') {
-        return `<path d="M${x},${y - 12} l-10,23 h20 z" fill="#ffb95e" stroke="#3b3926" stroke-width="2"/>${label ? `<text x="${x}" y="${y + 39}" text-anchor="middle" fill="#d2d8b7" font-size="14">${label}</text>` : ''}`;
+    function cone(x, y, label = '', color = '#ffb95e') {
+        return `<path d="M${x},${y - 12} l-10,23 h20 z" fill="${color}" stroke="#3b3926" stroke-width="2"/>${label ? `<text x="${x}" y="${y + 39}" text-anchor="middle" fill="#d2d8b7" font-size="14">${label}</text>` : ''}`;
     }
     function footballer(p, angle, label, foot = '') {
         const color = label === 'A' ? '#ce3158' : '#318fd8';
@@ -111,61 +111,87 @@ window.WarmupMotions = (() => {
         return '<rect x="100" y="140" width="700" height="330" rx="12" fill="#1c5541" stroke="#9bc9ae" stroke-width="2"/>';
     }
     function ball(p) { return `<circle cx="${p[0]}" cy="${p[1]}" r="9" fill="#ffe059" stroke="#17392c" stroke-width="2"/>`; }
-    function passing(t) {
-        // Izquierda y derecha se leen desde la orientación de cada jugadora.
-        const duration = 3.8, u = t % (duration * 4), turn = Math.floor(u / duration), local = u - turn * duration;
-        const owner = turn % 2, foot = turn < 2 ? 'I' : 'D';
-        const centers = [[235, 310], [665, 310]], fronts = [[260, 310], [640, 310]];
-        const targets = [[300, foot === 'I' ? 255 : 365], [600, foot === 'I' ? 365 : 255]];
-        const recipient = 1 - owner, target = targets[owner];
-        const control = ease(local / 2), returning = ease((local - 2) / 1.8);
-        let location;
-        const positions = centers.map(p => [...p]);
-        if (local < 2) {
-            location = [mix(fronts[owner][0], target[0], control), mix(fronts[owner][1], target[1], control)];
-            positions[owner] = [location[0] + (owner ? 25 : -25), location[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
-        } else {
-            location = [mix(target[0], fronts[recipient][0], returning), mix(target[1], fronts[recipient][1], returning)];
-            const last = [target[0] + (owner ? 25 : -25), target[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
-            positions[owner] = [mix(last[0], centers[owner][0], returning), mix(last[1], centers[owner][1], returning)];
-        }
-        let body = field();
-        [[300, 235, 'I'], [300, 385, 'D'], [600, 235, 'D'], [600, 385, 'I']].forEach(p => { body += cone(...p); });
-        body += `<path d="M${point(fronts[owner])} L${point(target)}" fill="none" stroke="#9ee8bb" stroke-width="3"/><path d="M${point(target)} L${point(fronts[recipient])}" fill="none" stroke="#fff5e5" stroke-width="2" stroke-dasharray="9 8"/>`;
-        body += footballer(positions[0], 90, 'A', owner === 0 && local < 2 ? foot : '') + footballer(positions[1], 270, 'B', owner === 1 && local < 2 ? foot : '') + ball(location);
-        body += '<text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="17">6–8 m entre chicas · conos a 1–1,5 m · I y D desde cada jugadora</text>';
-        const who = owner ? 'B' : 'A', side = foot === 'I' ? 'izquierda' : 'derecha';
-        return { body, phase: local < 2 ? `${who}, controlá hacia delante con la ${side}, hacia tu cono ${foot === 'I' ? 'izquierdo' : 'derecho'}` : `${who}, devolvé el pase y volvé al centro, ahora recibe ${recipient ? 'B' : 'A'}` };
+    const lane = { centers: [[500, 310], [752, 310]], fronts: [[525, 310], [727, 310]], meeting: [500, 310], parked: [525, 310], support: [608, 310], supportFoot: [583, 310] };
+    function laneField() {
+        return field() + cone(140, 310, 'Giro') + cone(550, 250, 'I', '#71c3e7') + cone(550, 370, 'D', '#e6698d') + cone(702, 250, 'D', '#e6698d') + cone(702, 370, 'I', '#71c3e7');
     }
-    function running(t) {
-        const meeting = [560, 315], support = [715, 315], parked = [584, 315], supportFoot = [690, 315];
-        const runnerKeys = [[0, support], [.7, [670, 240]], [2.7, [235, 240]], [3.3, [150, 285]], [3.8, [150, 345]], [4.4, [235, 390]], [5.6, [510, 360]], [6, meeting], [8, meeting]];
-        const swapKeys = [[0, meeting], [.7, [605, 400]], [1.3, [715, 400]], [2, support], [8, support]];
+    function setup() {
+        return frame('UN SOLO ARMADO · CINCO CONOS POR PAREJA', laneField() + footballer(lane.centers[0], 90, 'A') + footballer(lane.centers[1], 270, 'B') + ball(lane.fronts[0]) + '<path d="M140,194 H500 M500,181 V207 M140,181 V207" fill="none" stroke="#c8dfca"/><text x="320" y="180" text-anchor="middle" fill="#c8dfca" font-size="17">10–12 m hasta el giro</text><path d="M500,440 H752" stroke="#c8dfca"/><text x="626" y="463" text-anchor="middle" fill="#c8dfca" font-size="16">6–8 m entre A y B</text>', 'Dejá los cinco conos fijos, en las carreras B se acerca para el pase corto');
+    }
+    function passing(t, options = {}) {
+        const duration = options.wall ? 5.6 : 3.8;
+        const feet = options.color ? ['I', 'D', 'I', 'I', 'D', 'D'] : ['I', 'I', 'D', 'D'];
+        const u = t % (duration * feet.length), turn = Math.min(feet.length - 1, Math.max(0, Math.floor(u / duration))), local = u - turn * duration;
+        const owner = turn % 2, foot = feet[turn], recipient = 1 - owner;
+        const target = owner ? [702, foot === 'I' ? 350 : 270] : [550, foot === 'I' ? 270 : 350];
+        const controlStart = options.wall ? 2 : 0, controlEnd = controlStart + (options.wall ? 1.6 : 2), passEnd = controlEnd + (options.wall ? 1.4 : 1.8);
+        const positions = lane.centers.map(p => [...p]);
+        let location, phase;
+        const who = owner ? 'B' : 'A', partner = recipient ? 'B' : 'A';
+        if (options.wall && local < controlStart) {
+            location = local < 1 ? track([[0, lane.fronts[owner]], [1, lane.fronts[recipient]]], local) : track([[1, lane.fronts[recipient]], [2, lane.fronts[owner]]], local);
+            phase = local < 1 ? `${who} inicia la pared con ${partner}` : `${partner} devuelve de cara, ${who} prepara el control orientado`;
+        } else if (local < controlEnd) {
+            location = track([[controlStart, lane.fronts[owner]], [controlEnd, target]], local);
+            positions[owner] = [location[0] + (owner ? 25 : -25), location[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
+            phase = `${who}, controlá hacia delante con la ${foot === 'I' ? 'izquierda' : 'derecha'}`;
+            if (options.color) phase = `${foot === 'I' ? 'AZUL' : 'ROSA'}, ${who} controla con la ${foot === 'I' ? 'izquierda' : 'derecha'}`;
+        } else {
+            location = track([[controlEnd, target], [passEnd, lane.fronts[recipient]]], local);
+            const last = [target[0] + (owner ? 25 : -25), target[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
+            positions[owner] = track([[controlEnd, last], [passEnd, lane.centers[owner]]], local);
+            phase = `${who} devuelve y vuelve al centro, ahora recibe ${partner}`;
+            if (options.color) phase = `Indicá ${feet[(turn + 1) % feet.length] === 'I' ? 'AZUL' : 'ROSA'} antes de que reciba ${partner}`;
+        }
+        let body = laneField();
+        body += `<path d="M${point(lane.fronts[owner])} L${point(target)}" fill="none" stroke="#9ee8bb" stroke-width="3"/><path d="M${point(target)} L${point(lane.fronts[recipient])}" fill="none" stroke="#fff5e5" stroke-width="2" stroke-dasharray="9 8"/>`;
+        body += footballer(positions[0], 90, 'A', owner === 0 && local >= controlStart && local < controlEnd ? foot : '') + footballer(positions[1], 270, 'B', owner === 1 && local >= controlStart && local < controlEnd ? foot : '') + ball(location);
+        body += '<text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="16">Azul, izquierda · Rosa, derecha · Mismos cinco conos en todas las variantes</text>';
+        return { body, phase };
+    }
+    function running(t, options = {}) {
+        const { meeting, support, parked, supportFoot } = lane;
+        const runnerKeys = [[0, support], [.7, [600, 205]], [2.7, [195, 205]], [3.3, [108, 270]], [3.8, [108, 350]], [4.4, [195, 390]], [5.6, [450, 385]], [6, meeting], [8, meeting]];
+        const swapKeys = [[0, meeting], [.6, [480, 410]], [1.3, [630, 410]], [1.8, [630, 310]], [2, support], [8, support]];
         const facing = (keys, time, fallback) => {
             const a = track(keys, time, false), b = track(keys, time + .02, false);
             return Math.hypot(b[0] - a[0], b[1] - a[1]) < .01 ? fallback : Math.atan2(b[0] - a[0], a[1] - b[1]) * 180 / Math.PI;
         };
         let positions, angles, location, phase;
         if (t < 5) {
-            positions = [track([[0, [215, 315]], [3, meeting], [5, meeting]], t), support]; angles = [90, 270];
+            positions = [track([[0, [165, 310]], [3, meeting], [5, meeting]], t), support]; angles = [90, 270];
             location = t < 3 ? parked : t < 4 ? track([[3, parked], [4, supportFoot]], t) : track([[4, supportFoot], [5, parked]], t);
             phase = t < 3 ? 'A corre desde el cono a la pelota' : t < 4 ? 'A frena y da un pase corto a B' : 'B devuelve corto y se prepara para correr al cono';
         } else {
             const cycle = (t - 5) % 16, half = Math.floor(cycle / 8), u = cycle % 8;
             const runner = half === 0 ? 1 : 0, other = 1 - runner;
             positions = []; angles = [];
-            positions[runner] = track(runnerKeys, u, false); positions[other] = track(swapKeys, u, false);
-            angles[runner] = facing(runnerKeys, u, 90); angles[other] = facing(swapKeys, u, 270);
-            location = u < 6 ? parked : u < 7 ? track([[6, parked], [7, supportFoot]], u) : track([[7, supportFoot], [8, parked]], u);
+            positions[runner] = track(runnerKeys, u, false); angles[runner] = facing(runnerKeys, u, 90);
+            const target = [550, other === 0 ? 270 : 350];
+            if (options.control && u < 2.4) {
+                location = track([[0, parked], [1.2, target], [2.4, parked]], u);
+                positions[other] = [location[0] - 25, location[1]]; angles[other] = 90;
+            } else {
+                const shift = options.control ? Math.max(0, u - 2.4) * 1.25 : u;
+                positions[other] = track(swapKeys, shift, false); angles[other] = facing(swapKeys, shift, 270);
+                location = u < 6 ? parked : u < 7 ? track([[6, parked], [7, supportFoot]], u) : track([[7, supportFoot], [8, parked]], u);
+            }
             const who = runner ? 'B' : 'A', partner = other ? 'B' : 'A';
-            phase = u < 2 ? `${who} va al cono, ${partner} deja la pelota y ocupa el apoyo de enfrente` : u < 4.4 ? `${who} rodea el cono y vuelve, la pelota queda preparada` : u < 6 ? `${who} vuelve a la pelota y se prepara para el pase corto` : u < 7 ? `${who} pasa corto a ${partner}` : `${partner} devuelve corto, ahora le toca correr al cono`;
+            phase = options.control && u < 1.2 ? `${partner} controla al ${other === 0 ? 'AZUL' : 'ROSA'}, ${who} sale al cono` : options.control && u < 2.4 ? `${partner} deja la pelota otra vez en el punto de pase` : u < 2.5 ? `${who} va al cono, ${partner} ocupa el apoyo de enfrente` : u < 4.4 ? `${who} rodea el cono y vuelve, la pelota queda preparada` : u < 6 ? `${who} vuelve a la pelota y se prepara para el pase corto` : u < 7 ? `${who} pasa corto a ${partner}` : `${partner} devuelve corto, ahora le toca correr al cono`;
         }
-        let body = field() + cone(185, 315, 'Cono de giro');
-        body += '<path d="M715,300 L670,240 H235 Q135,240 150,315 Q135,390 235,390 L510,360 560,315" fill="none" stroke="#9acbab" stroke-width="2" stroke-dasharray="9 8"/><path d="M584,315 H690" fill="none" stroke="#fff8e9" stroke-width="3" stroke-dasharray="8 7"/><circle cx="584" cy="315" r="17" fill="none" stroke="#ffe059" stroke-opacity=".55"/><text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="17">10–12 m al cono · pase corto de 2–3 m · cambia quién corre en cada vuelta</text>';
+        let body = laneField();
+        body += '<path d="M608,310 L600,205 H195 Q90,205 108,310 Q90,390 195,390 L450,385 500,310" fill="none" stroke="#9acbab" stroke-width="2" stroke-dasharray="9 8"/><path d="M525,310 H583" fill="none" stroke="#fff8e9" stroke-width="3" stroke-dasharray="8 7"/><circle cx="525" cy="310" r="17" fill="none" stroke="#ffe059" stroke-opacity=".55"/><text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="16">B se acerca para la pared de 2–3 m · El cono de giro queda a 10–12 m</text>';
         body += footballer(positions[0], angles[0], 'A') + footballer(positions[1], angles[1], 'B') + ball(location);
         return { body, phase };
     }
+    function frame(view, body, phase, progress = '', mobility = false) {
+        const e = Palometas.escapeHTML;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" role="img" aria-label="${e(view + '. ' + phase)}" font-family="Arial,sans-serif"><rect width="900" height="580" rx="18" fill="#102c27"/><text x="32" y="37" fill="#99cbb6" font-size="14" letter-spacing="3">PALOMETAS · ${mobility ? 'MOVILIDAD' : 'CIRCUITO DE PASES'}</text><text x="32" y="76" fill="#c8d9b8" font-size="18" letter-spacing="1">${e(view)}</text>${progress}${body}<rect x="22" y="519" width="856" height="43" rx="8" fill="#1c3d30"/><text x="450" y="546" text-anchor="middle" fill="#eff3e4" font-size="16">${e(phase)}</text></svg>`;
+    }
     function render(id, t = 0, sequence = []) {
+        t = Number.isFinite(t) ? Math.max(0, t) : 0;
+        const mobility = id === 'movilidad';
+        sequence = Array.isArray(sequence) ? sequence.filter(part => Number.isFinite(part.seconds) && part.seconds > 0) : [];
         let body, phase, view, sequenceTitle = '', progress = '';
         if (id === 'movilidad' && sequence.length) {
             const total = sequence.reduce((sum, part) => sum + part.seconds, 0), elapsed = t % total;
@@ -173,17 +199,17 @@ window.WarmupMotions = (() => {
             for (; index < sequence.length - 1; index++) { if (elapsed < start + sequence[index].seconds) break; start += sequence[index].seconds; }
             const part = sequence[index]; id = part.id; t = elapsed - start;
             sequenceTitle = `MOVILIDAD · ${index + 1} DE ${sequence.length} · ${part.name.toUpperCase()}`;
-            progress = `<rect x="32" y="105" width="836" height="4" rx="2" fill="#ffffff20"/><rect x="32" y="105" width="${836 * elapsed / total}" height="4" rx="2" fill="#a7d6af"/>`;
+            progress = `<rect x="32" y="105" width="836" height="4" rx="2" fill="#ffffff20"/><rect x="32" y="105" width="${836 * clamp(elapsed / total)}" height="4" rx="2" fill="#a7d6af"/>`;
         }
         if (id === 'progresion') { ({ body, phase } = running(t)); view = 'CARRERA, PARED CORTA Y CAMBIO · VISTA DESDE ARRIBA'; }
-        else if (id === 'pases') { ({ body, phase } = passing(t)); view = 'CONTROL Y PASE · VISTA DESDE ARRIBA'; }
+        else if (id === 'pases' || id === 'color' || id === 'pared') { ({ body, phase } = passing(t, { color: id === 'color', wall: id === 'pared' })); view = id === 'color' ? 'CONTROL AL COLOR · VISTA DESDE ARRIBA' : id === 'pared' ? 'PARED Y CONTROL · VISTA DESDE ARRIBA' : 'CONTROL Y PASE · VISTA DESDE ARRIBA'; }
+        else if (id === 'carrera-color') { ({ body, phase } = running(t, { control: true })); view = 'CARRERA, PARED Y CONTROL AL COLOR'; }
         else {
             const info = ['tobillo', 'sentadilla', 'zancada', 'talones'].includes(id) ? sidePose(id, t) : frontPose(id, t);
             body = `<ellipse cx="470" cy="469" rx="144" ry="12" fill="#0c241d"/><path d="M290 473 H670" stroke="#9dc2a9" stroke-width="2"/>${athlete(info.p, info.side)}`;
             phase = info.phase; view = info.side ? 'VISTA LATERAL' : 'VISTA DE FRENTE';
         }
-        const e = Palometas.escapeHTML;
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" role="img" aria-label="${e((sequenceTitle ? sequenceTitle + '. ' : '') + phase)}" font-family="Arial,sans-serif"><rect width="900" height="580" rx="18" fill="#102c27"/><text x="32" y="37" fill="#99cbb6" font-size="14" letter-spacing="3">PALOMETAS · ACTIVACIÓN</text><text x="32" y="76" fill="#c8d9b8" font-size="18" letter-spacing="1">${e(sequenceTitle || view)}</text>${progress}${body}<rect x="22" y="519" width="856" height="43" rx="8" fill="#1c3d30"/><text x="450" y="546" text-anchor="middle" fill="#eff3e4" font-size="16">${e(phase)}</text></svg>`;
+        return frame(sequenceTitle || view, body, phase, progress, mobility);
     }
-    return { render };
+    return { render, setup };
 })();

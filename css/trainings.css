@@ -169,3 +169,6 @@ dialog.training-media-dialog { width:min(1150px,calc(100vw - 24px)); }
 .training-mobility-parts small { display:block; color:#a9c5aa; margin:4px 0 6px; font-size:.78rem; }
 .training-mobility-parts p { color:#bfb7c6; font-size:.85rem; line-height:1.7; }
 .training-mobility-parts li { margin-bottom:18px; }
+.training-circuit-setup { padding:12px 16px; margin:0 0 22px; border:1px solid #91ba9638; border-radius:12px; background:#b3dbb007; }
+.training-circuit-setup > summary { color:#b9d8b8; font-weight:600; }
+.training-circuit-setup .training-media { margin-top:8px; }

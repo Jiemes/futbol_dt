@@ -12,49 +12,49 @@ window.PALOMETAS_TRAININGS = [
     "objective": "Buscá que la chica que tiene la pelota encuentre dos apoyos, supere la presión y llegue al arco con compañeras en zonas distintas.",
     "equipment": [
       "1 arco real",
-      "8–10 pelotas",
-      "Conos bajos, 4 por pareja para el ejercicio 9 y 1 por pareja para el 10, más los de las estaciones",
-      "Pecheras de dos equipos + 2 comodines",
+      "1 pelota por pareja o trío, más 2–3 de reserva",
+      "5 conos por pareja o trío, hasta 30 conos en total",
+      "Conos de dos colores y pecheras de dos equipos + 2 comodines",
       "Agua junto al campo"
     ],
-    "preparation": "Dejá armadas las tres estaciones antes de las 19. Reservá al lado un rectángulo con el arco real y dos puertas de conos: desde las 19:42 se usa ese espacio, primero sin arquera. Las medidas son referencias, ampliá si falta tiempo para decidir y reducí si sobra espacio.",
-    "coaching": "Vos observá los apoyos y el primer control. Pedile a Ángel que mire los espacios ocupados y las transiciones. En cada pausa, elegí una corrección breve para aplicar en la siguiente tanda.",
+    "preparation": "Antes de las 19, dejá listos los carriles de cinco conos y una pelota por grupo. Los ejercicios 9 a 13 usan ese mismo armado. Reservá cerca el espacio del arco para las tareas colectivas. Al pasar a salida, pedile a Ángel que reutilice ocho conos para las cuatro puertas mientras vos explicás y las chicas toman agua.",
+    "coaching": "Vos guiá la consigna y observá el primer control. Pedile a Ángel que muestre una acción y acompañe los carriles. Mantené los grupos por nombre durante todo el circuito y corregí una sola idea en cada pausa.",
     "stages": [
       {
         "id": "activacion",
-        "title": "Prepará el cuerpo y la pelota",
-        "shortTitle": "Activación",
+        "title": "Guiá Movilidad",
+        "shortTitle": "Movilidad",
         "start": "19:00",
-        "end": "19:18",
-        "minutes": 18,
+        "end": "19:12",
+        "minutes": 12,
         "type": "warmup",
         "goalkeeper": false,
-        "focus": "Guiá una activación de menos a más, prepará los apoyos, las frenadas y el primer toque antes de competir.",
-        "organization": "Para Movilidad, marcá 20 × 15 m y reuní a todas con espacio entre ellas. Para los ejercicios 9 y 10, armá carriles paralelos separados y usá las mismas parejas, con un trío si son impares. La arquera sigue con su entrenador hasta las 20.",
-        "timing": "Usá 12 min para Movilidad, con desplazamientos, movilidad y fuerza de base en una misma secuencia. Después, 3 min de control y pase con conos y 3 min de carrera con pared corta. Incluí las explicaciones y los cambios.",
+        "focus": "Prepará el cuerpo con una única secuencia continua de ocho movimientos, subiendo de a poco la intensidad.",
+        "organization": "Reuní a todas en un espacio de 20 × 15 m, con separación para moverse sin cruces. La arquera sigue con su entrenador hasta las 20.",
+        "timing": "Usá 12 min, con 3 de desplazamientos suaves, 4 de movilidad y 5 de fuerza y equilibrio. Incluí las demostraciones y los cambios.",
         "instructions": [
-          "19:00–19:12 · Guiá Movilidad como un solo ejercicio. Mostrá los ocho movimientos seguidos y aplicá las repeticiones indicadas. Empezá suave y preguntales cómo llegan.",
-          "19:12–19:15 · Armá las parejas con dos conos delante de cada chica. Pedí control hacia delante con la izquierda al cono izquierdo, devolución y vuelta al centro. Alterná después al derecho.",
-          "19:15–19:18 · Dejá una pelota y un apoyo corto frente al cono de carrera. Pedí carrera a la pelota, pared corta, giro en el cono y regreso. Cambiá quién corre después de cada pared."
+          "Preguntales cómo llegan y si tienen alguna molestia. Mostrá la secuencia continua de Movilidad.",
+          "Guiá los desplazamientos suaves, la movilidad de tobillos, cadera y tronco, y después los ejercicios de control de los apoyos.",
+          "Aplicá las repeticiones indicadas dentro de la secuencia. Al terminar, llevá a cada pareja a su carril ya armado."
         ],
         "cues": [
-          "Mirá que controlen los apoyos durante Movilidad.",
-          "En el ejercicio 9, pedí que el control vaya hacia delante y que regresen al centro después del pase.",
-          "En el 10, mirá que frenen antes de pasar, dejen la pelota preparada y cambien quién corre."
+          "Mirá que las rodillas acompañen la dirección de los pies.",
+          "Corregí la calidad de los movimientos antes de sumar repeticiones.",
+          "Subí la intensidad de a poco y mantené el grupo atento a una consigna por vez."
         ],
-        "easier": "Acortá la distancia al cono y dejá más tiempo para el control y la devolución. En Movilidad, ajustá el rango a lo que puedan controlar.",
-        "harder": "Subí de a poco el ritmo de carrera si mantienen la frenada y la precisión de los pases, sin buscar la velocidad máxima.",
-        "positionNotes": "Usá las parejas que ves por nombre para los ejercicios 9 y 10. En Movilidad trabajan todas juntas. Si el último grupo tiene tres, rotá quién apoya después de cada vuelta.",
+        "easier": "Acortá el rango de los movimientos si les cuesta mantener el equilibrio y el control.",
+        "harder": "Aumentá de a poco el ritmo de los desplazamientos cuando veas que están preparadas.",
+        "positionNotes": "En Movilidad trabajan todas juntas. Las parejas por nombre se usan a partir del circuito técnico.",
         "moves": [
           {
             "id": "movilidad",
             "number": "1–8",
             "name": "Movilidad continua",
             "time": "19:00–19:12",
-            "dose": "12 minutos, una secuencia con los ocho movimientos",
+            "dose": "12 minutos, una secuencia de ocho movimientos",
             "instructions": [
-              "Reuní a todas y mostrá la secuencia completa, los ocho movimientos se reproducen uno detrás de otro.",
-              "Después guiá el trabajo con las repeticiones de abajo, pasando de los desplazamientos suaves a la movilidad y el control de los apoyos."
+              "Mostrá los ocho movimientos seguidos y después guiá las repeticiones de abajo.",
+              "Mantené a todas trabajando juntas, los ejercicios con pelota empiezan en el siguiente bloque."
             ],
             "parts": [
               {
@@ -146,111 +146,113 @@ window.PALOMETAS_TRAININGS = [
                 "seconds": 36
               }
             ]
-          },
-          {
-            "id": "pases",
-            "number": "9",
-            "name": "Control hacia el cono y devolución",
-            "time": "19:12–19:15",
-            "dose": "3 minutos, las dos hacen el control y alternan los pies",
-            "instructions": [
-              "Separá a las chicas 6–8 m y colocá dos conos delante de cada una, uno hacia su izquierda y otro hacia su derecha, a 1–1,5 m del lugar de recepción.",
-              "Pedí que reciban en el centro y orienten el control hacia delante con la izquierda, hacia su cono izquierdo. Desde ahí, devuelven el pase y regresan al centro.",
-              "La compañera hace lo mismo desde su lado. En la siguiente recepción, cambian al pie derecho y al cono derecho.",
-              "En un trío, rotá a la tercera después de dos recepciones por jugadora para que todas hagan ambos lados."
-            ]
-          },
-          {
-            "id": "progresion",
-            "number": "10",
-            "name": "Carrera al cono y pared corta",
-            "time": "19:15–19:18",
-            "dose": "3 minutos, intercambiando quién corre en cada vuelta",
-            "instructions": [
-              "Marcá un cono a 10–12 m del punto donde dejás la pelota. Ubicá una chica junto al cono y a su compañera de frente a la pelota, a 2–3 m de distancia.",
-              "La primera corre a la pelota, frena y hace el pase corto a la compañera. Ella devuelve corto y sale corriendo a rodear el cono.",
-              "Quien recibió la devolución deja la pelota frenada en el punto de pase y ocupa el apoyo de enfrente que dejó su compañera.",
-              "La que corre rodea el cono, vuelve a la pelota y hace la pared corta con la nueva pasadora. Repetí alternando quién corre, sin llevarse la pelota al cono.",
-              "Dejá separados el camino de ida al cono, el regreso a la pelota y el pequeño cambio al puesto de apoyo. En un trío, rotá el apoyo en cada vuelta."
-            ]
           }
         ]
       },
       {
-        "id": "estaciones",
-        "title": "Armá tres estaciones con todas en acción",
-        "shortTitle": "Estaciones",
-        "start": "19:18",
+        "id": "circuito-parejas",
+        "type": "circuit",
+        "title": "Guiá el circuito sin cambiar los conos",
+        "shortTitle": "Circuito técnico",
+        "start": "19:12",
         "end": "19:42",
-        "minutes": 24,
-        "type": "stations",
+        "minutes": 30,
         "goalkeeper": false,
-        "focus": "Usá retos cortos para que miren, decidan y ofrezcan apoyo. Armá tres grupos pequeños y hacelos recorrer las tres estaciones.",
-        "organization": "Armá A: 12 × 10 m, B: 12 × 12 m y C: 14 × 12 m. Dejá al menos 4 m libres entre estaciones. Los grupos rotan A → B → C → A, las pelotas se quedan en cada lugar.",
-        "timing": "3 vueltas de 8 min: 3 min de juego + 1 de pausa y devolución + 3 de revancha + 1 para agua y rotación. En la última rotación, pasá al campo de salida.",
+        "focus": "Trabajá control, pase, apoyo y carrera con cinco variantes progresivas. Conservá las mismas parejas y los mismos cinco conos durante todo el bloque.",
+        "organization": "Armá carriles paralelos de unos 18–20 m de largo, con espacio para rodear el cono por fuera. Mantené una pelota por pareja o trío y el material de reserva fuera del recorrido.",
+        "timing": "Cinco variantes de 6 min. En cada una, usá 30 s para mostrar la consigna, 2 min 30 s de práctica, 30 s para agua y una corrección, y 2 min 30 s de revancha. Total, 30 min.",
         "instructions": [
-          "Mostrá una acción de cada estación antes de iniciar el reloj.",
-          "Mantené los grupos durante las tres vueltas y cambiá las funciones dentro de cada ejercicio.",
-          "Pediles que superen su propia marca en la revancha. Mantené a todas participando, sin eliminaciones."
+          "Dejá todos los carriles armados antes de la práctica. Al terminar Movilidad, ubicá a las chicas por los nombres de sus grupos.",
+          "Recorré los ejercicios 9, 10, 11, 12 y 13 en ese orden. Entre variantes, cambiá la consigna y la distancia del apoyo, sin tocar los conos.",
+          "Mientras vos explicás, pedile a Ángel que muestre una acción con una pareja. El resto mira desde su carril, con la pelota frenada.",
+          "Usá las pausas breves para agua y una corrección. En los tríos, rotá el apoyo para que ninguna quede fija mirando."
         ],
         "cues": [
-          "Acompañá A y B, y pedile a Ángel que acompañe C.",
-          "Repetí consignas cortas, mirá, perfilate y volvé a ofrecerte.",
-          "Dejá una pelota en juego por tarea, salvo las dos parejas independientes de A."
+          "Pedí un primer toque que prepare el pase siguiente.",
+          "Mirá que vuelvan al centro o dejen la pelota preparada según la variante.",
+          "En las carreras, pedí que frenen antes del pase corto y giren con control."
         ],
-        "easier": "Ampliá el espacio y dejá controles libres cuando la presión no les permita enlazar acciones.",
-        "harder": "Reducí un poco el espacio o pedí un apoyo en movimiento. Cambiá una sola condición por vez.",
-        "stations": [
+        "easier": "Acortá la carrera al cono usando el mismo carril y reducí el ritmo de los pases. Si hace falta, mantené una variante más tiempo y quitá la última.",
+        "harder": "Dá la señal de color más cerca de la recepción o pedí una devolución más rápida si mantienen precisión. Cambiá una condición por vez.",
+        "positionNotes": "Mantené estas parejas o tríos en las cinco variantes. Las posiciones habituales sirven para combinar compañeras, el reparto se muestra por sus nombres.",
+        "circuitSetup": {
+          "title": "Armá una vez, mantené los cinco conos",
+          "instructions": [
+            "Prepará un carril por pareja o trío antes de las 19, con una pelota y cinco conos bajos. Dejá espacio entre los carriles para correr por fuera.",
+            "Separá las posiciones A y B unos 6–8 m. Poné dos conos delante de cada una, a 1–1,5 m, azul para su izquierda y rosa para su derecha.",
+            "Ubicá el quinto cono a 10–12 m detrás de A. Ese es el punto de giro para las carreras.",
+            "En las variantes de carrera, B se acerca para una pared de 2–3 m. Cambian de lugar las chicas, los cinco conos quedan fijos."
+          ]
+        },
+        "moves": [
           {
-            "id": "pase",
-            "letter": "A",
-            "title": "Control hacia el color",
-            "dimension": "12 × 10 m",
-            "gif": "01-control-color.gif",
-            "example": "4 jugadoras: dos parejas en carriles separados",
-            "objective": "Pedí que miren antes de recibir y orienten el control hacia la siguiente acción.",
-            "steps": [
-              "Con cuatro, armá dos parejas en carriles separados. Con tres, ubicá pasadora, receptora y apoyo. Marcá dos puertas de colores junto a la receptora.",
-              "Pedile a la pasadora que nombre un color mientras viaja la pelota. La receptora controla hacia esa puerta y devuelve. En el trío, pasa a la tercera, que reinicia.",
-              "Cambiá receptora y pasadora cada 45–60 segundos. En el trío, rotá los tres puestos."
+            "id": "pases",
+            "number": "9",
+            "name": "Control y devolución",
+            "time": "19:12–19:18",
+            "dose": "6 min, control al cono y vuelta al centro",
+            "instructions": [
+              "Usá A y B a 6–8 m, con los dos conos de control delante de cada una. El cono de giro queda preparado para después.",
+              "Pedí control hacia delante con la izquierda al cono azul, devolución y regreso al centro. La compañera repite desde su lado.",
+              "Después alterná al pie derecho y al cono rosa. En el trío, rotá quién recibe después de dos acciones."
             ],
-            "score": "Dales un punto por control hacia el color indicado y pase preciso. En la revancha, pediles que mejoren su marca.",
-            "cue": "Mirá que el primer toque prepare el pase y no aleje la pelota de más."
+            "challenge": "Un punto por control al lado indicado y devolución precisa. En la segunda tanda, pediles que mejoren su marca."
           },
           {
-            "id": "rondo",
-            "letter": "B",
-            "title": "Rondo y nuevo apoyo",
-            "dimension": "12 × 12 m",
-            "gif": "02-rondo-apoyos.gif",
-            "example": "3 contra 1, con un grupo de tres, usar 2 contra 1",
-            "objective": "Pedí que creen otra línea de pase después de soltar la pelota.",
-            "steps": [
-              "Con cuatro, jugá 3 contra 1. Con tres, usá 2 contra 1 y ampliá si hace falta.",
-              "Dales un punto cada cinco pases seguidos. La defensora también suma si recupera y sale controlando por un lado.",
-              "Cambiá defensora cada 45–60 segundos. Pedí que, después del pase, busquen un ángulo nuevo."
+            "id": "progresion",
+            "number": "10",
+            "name": "Carrera y pared corta",
+            "time": "19:18–19:24",
+            "dose": "6 min, cambio de corredora después de cada pared",
+            "instructions": [
+              "Sin tocar los conos, ubicá a A en el de giro y dejá la pelota en su punto de recepción. Acercá a B para una pared de 2–3 m.",
+              "A corre a la pelota, frena y pasa corto a B. B devuelve y sale a rodear el cono de giro.",
+              "A deja la pelota frenada en el punto de pase y ocupa el apoyo de enfrente. B vuelve del cono, llega a la pelota y hace la pared con A.",
+              "Repetí cambiando quién corre en cada vuelta. Mantené separados los caminos de ida y regreso. En el trío, rotá el apoyo en cada vuelta."
             ],
-            "score": "Contá cadenas de cinco pases y recuperaciones. Hacé que todas pasen por defensa.",
-            "cue": "Mirá que se muevan para salir de la sombra de la defensora."
+            "challenge": "Un punto por vuelta con pared precisa, pelota preparada y cambio de corredora. Premiá el control, sin competir por velocidad."
           },
           {
-            "id": "duelo",
-            "letter": "C",
-            "title": "1 contra 1 con apoyos",
-            "dimension": "14 × 12 m",
-            "gif": "03-duelo-apoyos.gif",
-            "example": "1 contra 1 + 1 apoyo neutral, con cuatro, sumar otro apoyo",
-            "objective": "Ayudalas a elegir entre superar conduciendo o combinar.",
-            "steps": [
-              "Ubicá dos jugadoras adentro y una o dos neutrales por fuera de los laterales. Las neutrales ayudan al equipo con pelota y no marcan.",
-              "Asigná una puerta de ataque y otra de defensa a cada jugadora interior. El punto llega al cruzar la puerta rival con control.",
-              "Si recupera la defensora, dejala atacar la otra puerta. Rotá interior y apoyo cada minuto."
+            "id": "color",
+            "number": "11",
+            "name": "Control al color indicado",
+            "time": "19:24–19:30",
+            "dose": "6 min, mirar y decidir antes de recibir",
+            "instructions": [
+              "Volvé a separar A y B 6–8 m, sin mover los conos.",
+              "Pedile a la pasadora que diga azul o rosa mientras viaja la pelota. La receptora mira y controla hacia ese cono con el pie correspondiente.",
+              "Después devuelve y vuelve al centro. Cambiá la señal para evitar que adivinen siempre la misma secuencia. En el trío, la tercera puede dar la señal y rotar después de dos acciones."
             ],
-            "score": "Dales un punto por cruzar la puerta con control y reiniciá el marcador para la revancha.",
-            "cue": "Permití la pared cuando convenga y la conducción cuando se abra el camino. Pedí a los apoyos que se muevan por su lateral."
+            "challenge": "Un punto por interpretar el color, orientar bien y devolver con precisión."
+          },
+          {
+            "id": "pared",
+            "number": "12",
+            "name": "Pared antes del control",
+            "time": "19:30–19:36",
+            "dose": "6 min, combinar y después orientar",
+            "instructions": [
+              "Mantené A y B en los mismos puntos de pase. Una inicia con pase a la compañera y recibe una devolución de cara.",
+              "Recién después de la pared, pedí control hacia delante al cono, pase a la compañera y vuelta al centro.",
+              "La otra inicia la misma secuencia. Empezá permitiendo dos toques en la devolución y reducilos si mantienen la precisión. En el trío, rotá después de cada secuencia."
+            ],
+            "challenge": "Dos puntos por pared y control completos, sin saltearse la vuelta al centro."
+          },
+          {
+            "id": "carrera-color",
+            "number": "13",
+            "name": "Carrera, pared y control al color",
+            "time": "19:36–19:42",
+            "dose": "6 min, integrar los gestos en un mismo recorrido",
+            "instructions": [
+              "Usá la carrera del ejercicio 10, con el mismo cono de giro y el apoyo corto de enfrente.",
+              "Después de recibir la devolución de la pared, indicá azul o rosa. Pedí que controle hacia ese cono y vuelva a dejar la pelota en el punto de pase.",
+              "Mientras una hace ese control y luego ocupa el apoyo, la compañera rodea el cono de giro y vuelve a la pelota. Después intercambian las funciones.",
+              "En la animación se alternan los dos colores para mostrar ambas opciones. En cancha, elegí vos la señal antes de la recepción."
+            ],
+            "challenge": "Reto de cada grupo, completar seis vueltas correctas entre todas. Si pierden precisión, bajá el ritmo y repetí."
           }
-        ],
-        "positionNotes": "Mezclá una defensora o lateral, una mediocampista y una delantera o extrema en cada grupo. Si son cuatro, sumá otra jugadora de banda. Rotá las funciones para que todas pasen, defiendan y ataquen."
+        ]
       },
       {
         "id": "salida-sin-arquera",

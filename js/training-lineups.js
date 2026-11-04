@@ -20,12 +20,12 @@ window.TrainingLineups = (() => {
             slots: [role('DEF', 'Defensora o lateral', ['back', 'wide']), role('MC', 'Mediocampista', ['mid']), role('AT', 'Delantera o extrema', ['front', 'wing']), role('BAN', 'Jugadora de banda', ['wide', 'wing', 'mid'])].slice(0, count),
             note: 'Mantené este grupo y rotalo por las tres estaciones. Adentro del ejercicio, cambiá las funciones.'
         }));
-        if (type === 'warmup') {
+        if (type === 'warmup' || type === 'circuit') {
             const sizes = Array(Math.floor(n / 2)).fill(2);
             if (n % 2) sizes[sizes.length - 1] = 3;
             return sizes.map((size, i) => ({ id: 'pair-' + i, title: size === 3 ? 'Trío de pases' : 'Pareja ' + (i + 1), team: 'red',
                 slots: [role('1', 'Primera pasadora', i % 2 ? ['wide', 'wing'] : ['back', 'wide']), role('2', 'Receptora', i % 2 ? ['front', 'mid'] : ['mid', 'front']), role('3', 'Tercer apoyo', ['any'])].slice(0, size),
-                note: 'Usá esta pareja en los ejercicios 9 y 10. En el trío, rotá quién hace el apoyo en cada vuelta.' }));
+                note: 'Mantené este grupo en todas las variantes. En el trío, rotá el apoyo después de cada vuelta.' }));
         }
         if (type === 'cooldown') return [];
         const d = TrainingBoards.distribution(type, n);

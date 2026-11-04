@@ -161,16 +161,18 @@ const trainingsManager = {
     warmupDemoHTML() {
         const moves = this.current.stages[this.step].moves, move = moves[this.warmupIndex];
         const parts = move.parts ? `<div class="training-mobility-parts"><h4>Todo dentro de Movilidad</h4><ol>${move.parts.map(part => `<li><strong>${this.e(part.name)}</strong><small>${this.e(part.dose)}</small><p>${part.instructions.map(item => this.e(item)).join(' ')}</p></li>`).join('')}</ol></div>` : '';
-        return `<p class="training-warmup-dose"><strong>${this.e(move.time)}</strong> · ${this.e(move.dose)}</p><figure class="training-media"><div class="training-static">${WarmupMotions.render(move.id, 0, move.parts)}</div><div class="training-motion" data-warmup="${this.e(move.id)}" hidden></div><figcaption><span>${move.parts ? 'Mostrá la secuencia de Movilidad, los ocho movimientos avanzan automáticamente uno detrás de otro.' : 'Mostrá el ejercicio y usá estas indicaciones para guiar a las chicas.'}</span><div class="training-media-actions"><button type="button" class="btn btn-primary btn-sm" data-training-motion aria-pressed="false">▶ Ver movimiento</button><button type="button" class="btn btn-secondary btn-sm" data-training-enlarge>Ampliar preparación</button></div></figcaption></figure><div class="training-warmup-instructions">${this.list(move.instructions, true)}${parts}</div><div class="training-warmup-navigation"><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex - 1}" ${this.warmupIndex === 0 ? 'disabled' : ''}>← Ejercicio anterior</button><span>${this.warmupIndex + 1} de ${moves.length} ejercicios</span><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex + 1}" ${this.warmupIndex === moves.length - 1 ? 'disabled' : ''}>Próximo ejercicio →</button></div>`;
+        return `<p class="training-warmup-dose"><strong>${this.e(move.time)}</strong> · ${this.e(move.dose)}</p><figure class="training-media"><div class="training-static">${WarmupMotions.render(move.id, 0, move.parts)}</div><div class="training-motion" data-warmup="${this.e(move.id)}" hidden></div><figcaption><span>${move.parts ? 'Mostrá la secuencia de Movilidad, los ocho movimientos avanzan automáticamente uno detrás de otro.' : 'Mostrá el ejercicio y usá estas indicaciones para guiar a las chicas.'}</span><div class="training-media-actions"><button type="button" class="btn btn-primary btn-sm" data-training-motion aria-pressed="false">▶ Ver movimiento</button><button type="button" class="btn btn-secondary btn-sm" data-training-enlarge>Ampliar preparación</button></div></figcaption></figure><div class="training-warmup-instructions">${this.list(move.instructions, true)}${move.challenge ? `<div class="training-challenge"><strong>El reto</strong><p>${this.e(move.challenge)}</p></div>` : ''}${parts}</div>${moves.length > 1 ? `<div class="training-warmup-navigation"><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex - 1}" ${this.warmupIndex === 0 ? 'disabled' : ''}>← Ejercicio anterior</button><span>${this.warmupIndex + 1} de ${moves.length} ejercicios</span><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex + 1}" ${this.warmupIndex === moves.length - 1 ? 'disabled' : ''}>Próximo ejercicio →</button></div>` : ''}`;
     },
     warmupHTML(stage) {
-        return `<section class="training-warmup"><label for="training-warmup-move">Elegí el ejercicio que querés ver</label><select id="training-warmup-move">${stage.moves.map((move, i) => `<option value="${i}" ${i === this.warmupIndex ? 'selected' : ''}>${this.e(move.number || i + 1)}. ${this.e(move.name)}</option>`).join('')}</select><div id="training-warmup-example">${this.warmupDemoHTML()}</div></section>`;
+        const preparation = stage.circuitSetup ? `<details class="training-circuit-setup"><summary>${this.e(stage.circuitSetup.title)}</summary><figure class="training-media"><div class="training-static">${WarmupMotions.setup()}</div><figcaption>Usá este mismo armado para las cinco variantes. Cambiá la consigna, sin mover los conos.<div class="training-media-actions"><button type="button" class="btn btn-secondary btn-sm" data-training-enlarge>Ampliar armado</button></div></figcaption></figure>${this.list(stage.circuitSetup.instructions, true)}</details>` : '';
+        const selector = stage.moves.length > 1 ? `<label for="training-warmup-move">Elegí la variante que vas a trabajar</label><select id="training-warmup-move">${stage.moves.map((move, i) => `<option value="${i}" ${i === this.warmupIndex ? 'selected' : ''}>${this.e(move.number || i + 1)}. ${this.e(move.name)}</option>`).join('')}</select>` : '';
+        return `<section class="training-warmup">${preparation}${selector}<div id="training-warmup-example">${this.warmupDemoHTML()}</div></section>`;
     },
     changeWarmup(index) {
         const moves = this.current?.stages[this.step].moves;
         if (!moves || !Number.isInteger(index) || index < 0 || index >= moves.length) return;
         this.stopWarmup(); this.warmupIndex = index; this.renderStage();
-        document.getElementById('training-warmup-move').focus({ preventScroll: true });
+        document.getElementById('training-warmup-move')?.focus({ preventScroll: true });
     },
     stopWarmup() {
         if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
@@ -194,12 +196,13 @@ const trainingsManager = {
     renderStage() {
         this.stopWarmup();
         const stage = this.current.stages[this.step], last = this.step === this.current.stages.length - 1;
+        if (stage.moves?.length) this.warmupIndex = Math.max(0, Math.min(this.warmupIndex, stage.moves.length - 1));
         const roster = window.playersManager?.players || [];
         const keepers = roster.filter(TrainingLineups.isKeeper);
         const selectedKeeper = this.keeperId === null ? (keepers.length === 1 ? keepers[0] : null) : keepers.find(p => p.id === this.keeperId);
         const lineup = TrainingLineups.create(stage.type, this.fieldPlayers, this.selectedPlayers(), selectedKeeper);
         let visual;
-        if (stage.type === 'warmup') visual = this.warmupHTML(stage);
+        if (stage.type === 'warmup' || stage.type === 'circuit') visual = this.warmupHTML(stage);
         else if (stage.type === 'cooldown') visual = `<div class="training-closing-visual"><span aria-hidden="true">✓</span><p>Una compañera libre.<br>Una decisión compartida.</p><small>Dos ideas para llevar al próximo partido.</small></div>`;
         else visual = this.media({ title: stage.title, staticHTML: TrainingBoards.render(stage.type, this.fieldPlayers, lineup), gif: stage.gif, example: stage.example });
         document.getElementById('training-stage').innerHTML = `
@@ -207,7 +210,7 @@ const trainingsManager = {
             <div class="training-progress" role="progressbar" aria-label="Posición en el recorrido" aria-valuemin="1" aria-valuemax="${this.current.stages.length}" aria-valuenow="${this.step + 1}"><span style="width:${(this.step + 1) / this.current.stages.length * 100}%"></span></div>
             <h2 id="training-step-heading" tabindex="-1">${this.e(stage.title)}</h2><p class="training-focus">${this.e(stage.focus)}</p>
             <div class="training-rolebar"><strong>${this.e(TrainingBoards.description(stage.type, this.fieldPlayers))}</strong><span class="${stage.goalkeeper ? 'with-keeper' : ''}">${stage.goalkeeper ? 'Con arquera' : 'Sin arquera'}</span></div>
-            ${visual}${stage.type !== 'warmup' && stage.type !== 'cooldown' ? this.legend() : ''}
+            ${visual}${!['warmup', 'circuit', 'cooldown'].includes(stage.type) ? this.legend() : ''}
             ${this.lineupHTML(stage, lineup)}
             <div class="training-instruction-grid"><section><h3>Cómo organizarlo</h3><p>${this.e(stage.organization)}</p></section><section><h3>Trabajo y pausas</h3><p>${this.e(stage.timing)}</p></section></div>
             <section class="training-instructions"><h3>Cómo guiar el ejercicio</h3>${this.list(stage.instructions, true)}</section>
@@ -228,11 +231,12 @@ const trainingsManager = {
             if (!play) { this.stopWarmup(); return; }
             this.stopWarmup(); motion.hidden = false; media.querySelector('.training-static').hidden = true;
             button.setAttribute('aria-pressed', 'true'); button.textContent = '■ Ver preparación';
-            const start = performance.now(); let previous = -100;
+            let start = null, previous = -Infinity;
             const move = this.current.stages[this.step].moves.find(item => item.id === motion.dataset.warmup);
             const animate = now => {
                 if (!motion.isConnected || motion.hidden) { this.animationFrame = null; return; }
-                if (now - previous >= 33) { motion.innerHTML = WarmupMotions.render(motion.dataset.warmup, (now - start) / 1000, move?.parts); previous = now; }
+                if (start === null) start = now;
+                if (now - previous >= 33) { motion.innerHTML = WarmupMotions.render(motion.dataset.warmup, Math.max(0, (now - start) / 1000), move?.parts); previous = now; }
                 this.animationFrame = requestAnimationFrame(animate);
             };
             this.animationFrame = requestAnimationFrame(animate); return;
