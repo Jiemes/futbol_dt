@@ -13,7 +13,7 @@ window.PALOMETAS_TRAININGS = [
     "equipment": [
       "1 arco real",
       "8–10 pelotas",
-      "24–28 conos bajos de dos colores",
+      "Conos bajos, 4 por pareja para el ejercicio 9 y 1 por pareja para el 10, más los de las estaciones",
       "Pecheras de dos equipos + 2 comodines",
       "Agua junto al campo"
     ],
@@ -30,122 +30,148 @@ window.PALOMETAS_TRAININGS = [
         "type": "warmup",
         "goalkeeper": false,
         "focus": "Guiá una activación de menos a más, prepará los apoyos, las frenadas y el primer toque antes de competir.",
-        "organization": "Marcá un espacio de 20 × 15 m. Dejá carriles libres para los desplazamientos y armá parejas para los pases. Si son impares, usá un trío. La arquera sigue con su entrenador hasta las 20.",
-        "timing": "3 min de desplazamientos + 4 de movilidad + 5 de fuerza y equilibrio + 3 con pelota + 3 de progresiones. Los cambios y las explicaciones están incluidos.",
+        "organization": "Para Movilidad, marcá 20 × 15 m y reuní a todas con espacio entre ellas. Para los ejercicios 9 y 10, armá carriles paralelos separados y usá las mismas parejas, con un trío si son impares. La arquera sigue con su entrenador hasta las 20.",
+        "timing": "Usá 12 min para Movilidad, con desplazamientos, movilidad y fuerza de base en una misma secuencia. Después, 3 min de control y pase con conos y 3 min de carrera con pared corta. Incluí las explicaciones y los cambios.",
         "instructions": [
-          "19:00–19:03 · Empezá con trote suave, pasos laterales y cambios de frente. Preguntales cómo llegan y si tienen alguna molestia.",
-          "19:03–19:07 · Mostrá la movilidad de tobillos, la apertura de cadera y los giros suaves de tronco. Pedí movimientos controlados, sin rebotes.",
-          "19:07–19:12 · Guiá dos vueltas de 6 sentadillas cortas, 4 zancadas por lado, 8 elevaciones de talones y 15 segundos de equilibrio por pierna. Usá el tiempo restante para corregir y cambiar.",
-          "19:12–19:15 · Ubicá las parejas a 6–8 m. Pedí que miren antes, reciban de costado, orienten el control y se muevan después del pase.",
-          "19:15–19:18 · Hacé tres progresiones de 10–15 m, de moderado a vivo, con regreso caminando. Pedí que frenen con pasos cortos, sin buscar la velocidad máxima."
+          "19:00–19:12 · Guiá Movilidad como un solo ejercicio. Mostrá los ocho movimientos seguidos y aplicá las repeticiones indicadas. Empezá suave y preguntales cómo llegan.",
+          "19:12–19:15 · Armá las parejas con dos conos delante de cada chica. Pedí control hacia delante con la izquierda al cono izquierdo, devolución y vuelta al centro. Alterná después al derecho.",
+          "19:15–19:18 · Dejá una pelota y un apoyo corto frente al cono de carrera. Pedí carrera a la pelota, pared corta, giro en el cono y regreso. Cambiá quién corre después de cada pared."
         ],
         "cues": [
-          "Mirá que la rodilla acompañe la dirección del pie.",
-          "Corregí la calidad antes de sumar repeticiones.",
-          "Subí la intensidad cuando veas que controlan los movimientos."
+          "Mirá que controlen los apoyos durante Movilidad.",
+          "En el ejercicio 9, pedí que el control vaya hacia delante y que regresen al centro después del pase.",
+          "En el 10, mirá que frenen antes de pasar, dejen la pelota preparada y cambien quién corre."
         ],
-        "easier": "Acortá las progresiones y el rango de las zancadas si les cuesta controlar el movimiento.",
-        "harder": "Aumentá de a poco la velocidad de las últimas progresiones, siempre con una frenada estable.",
-        "positionNotes": "Para los pases, combiná defensoras con mediocampistas y jugadoras de banda con delanteras. Así empezás a trabajar conexiones que después van a usar en los juegos.",
+        "easier": "Acortá la distancia al cono y dejá más tiempo para el control y la devolución. En Movilidad, ajustá el rango a lo que puedan controlar.",
+        "harder": "Subí de a poco el ritmo de carrera si mantienen la frenada y la precisión de los pases, sin buscar la velocidad máxima.",
+        "positionNotes": "Usá las parejas que ves por nombre para los ejercicios 9 y 10. En Movilidad trabajan todas juntas. Si el último grupo tiene tres, rotá quién apoya después de cada vuelta.",
         "moves": [
           {
-            "id": "lateral",
-            "name": "Desplazamientos laterales",
-            "time": "19:00–19:03",
-            "dose": "Alterná con trote suave y cambios de frente",
+            "id": "movilidad",
+            "number": "1–8",
+            "name": "Movilidad continua",
+            "time": "19:00–19:12",
+            "dose": "12 minutos, una secuencia con los ocho movimientos",
             "instructions": [
-              "Mostrá una posición cómoda con las rodillas algo flexionadas.",
-              "Pedí pasos laterales cortos, sin cruzar los pies, y después cambiá el sentido."
-            ]
-          },
-          {
-            "id": "tobillo",
-            "name": "Movilidad de tobillo",
-            "time": "19:03–19:07",
-            "dose": "6 movimientos suaves por lado",
-            "instructions": [
-              "Ubicá un pie adelante y pedí que mantengan toda su planta apoyada.",
-              "Mostrá cómo llevar la rodilla hacia delante, siguiendo la dirección del pie y sin levantar el talón."
-            ]
-          },
-          {
-            "id": "cadera",
-            "name": "Abrir y cerrar la cadera",
-            "time": "19:03–19:07",
-            "dose": "4 aperturas y cierres por lado",
-            "instructions": [
-              "Pedí que levanten una rodilla con el tronco estable.",
-              "Mostrá cómo abrirla hacia el costado, volver al centro y apoyar el pie antes de cambiar de pierna."
-            ]
-          },
-          {
-            "id": "tronco",
-            "name": "Giros suaves de tronco",
-            "time": "19:03–19:07",
-            "dose": "4 giros cómodos hacia cada lado",
-            "instructions": [
-              "Pedí pies separados y apoyados, con las rodillas relajadas.",
-              "Guiá giros suaves a ambos lados, sin rebotes ni forzar el final del movimiento."
-            ]
-          },
-          {
-            "id": "sentadilla",
-            "name": "Sentadilla corta",
-            "time": "19:07–19:12",
-            "dose": "6 repeticiones por vuelta, 2 vueltas",
-            "instructions": [
-              "Pedí pies separados y toda la planta apoyada.",
-              "Mostrá cómo llevar la cadera atrás y bajar poco, con las rodillas en la dirección de los pies. Después subí con control."
-            ]
-          },
-          {
-            "id": "zancada",
-            "name": "Zancada corta",
-            "time": "19:07–19:12",
-            "dose": "4 repeticiones por lado y por vuelta",
-            "instructions": [
-              "Mostrá un paso cómodo hacia delante, con el tronco erguido.",
-              "Pedí una bajada corta y controlada, con el pie delantero firme, y después que cambien la pierna adelantada."
-            ]
-          },
-          {
-            "id": "talones",
-            "name": "Elevación de talones",
-            "time": "19:07–19:12",
-            "dose": "8 repeticiones por vuelta, 2 vueltas",
-            "instructions": [
-              "Pedí que suban los dos talones despacio, apoyándose en la parte delantera de los pies.",
-              "Mirá que bajen con control y sin dejarse caer. Si necesitan equilibrio, permití un apoyo liviano."
-            ]
-          },
-          {
-            "id": "equilibrio",
-            "name": "Equilibrio sobre una pierna",
-            "time": "19:07–19:12",
-            "dose": "15 segundos por pierna y por vuelta",
-            "instructions": [
-              "Pedí que levanten un pie, mantengan la pelvis nivelada y miren al frente.",
-              "Mirá que la rodilla de apoyo quede estable, después hacelas cambiar de pierna."
+              "Reuní a todas y mostrá la secuencia completa, los ocho movimientos se reproducen uno detrás de otro.",
+              "Después guiá el trabajo con las repeticiones de abajo, pasando de los desplazamientos suaves a la movilidad y el control de los apoyos."
+            ],
+            "parts": [
+              {
+                "id": "lateral",
+                "name": "Desplazamientos laterales",
+                "time": "19:00–19:03",
+                "dose": "Alterná con trote suave y cambios de frente",
+                "instructions": [
+                  "Mostrá una posición cómoda con las rodillas algo flexionadas.",
+                  "Pedí pasos laterales cortos, sin cruzar los pies, y después cambiá el sentido."
+                ],
+                "seconds": 8
+              },
+              {
+                "id": "tobillo",
+                "name": "Movilidad de tobillo",
+                "time": "19:03–19:07",
+                "dose": "6 movimientos suaves por lado",
+                "instructions": [
+                  "Ubicá un pie adelante y pedí que mantengan toda su planta apoyada.",
+                  "Mostrá cómo llevar la rodilla hacia delante, siguiendo la dirección del pie y sin levantar el talón."
+                ],
+                "seconds": 10
+              },
+              {
+                "id": "cadera",
+                "name": "Abrir y cerrar la cadera",
+                "time": "19:03–19:07",
+                "dose": "4 aperturas y cierres por lado",
+                "instructions": [
+                  "Pedí que levanten una rodilla con el tronco estable.",
+                  "Mostrá cómo abrirla hacia el costado, volver al centro y apoyar el pie antes de cambiar de pierna."
+                ],
+                "seconds": 16
+              },
+              {
+                "id": "tronco",
+                "name": "Giros suaves de tronco",
+                "time": "19:03–19:07",
+                "dose": "4 giros cómodos hacia cada lado",
+                "instructions": [
+                  "Pedí pies separados y apoyados, con las rodillas relajadas.",
+                  "Guiá giros suaves a ambos lados, sin rebotes ni forzar el final del movimiento."
+                ],
+                "seconds": 6
+              },
+              {
+                "id": "sentadilla",
+                "name": "Sentadilla corta",
+                "time": "19:07–19:12",
+                "dose": "6 repeticiones por vuelta, 2 vueltas",
+                "instructions": [
+                  "Pedí pies separados y toda la planta apoyada.",
+                  "Mostrá cómo llevar la cadera atrás y bajar poco, con las rodillas en la dirección de los pies. Después subí con control."
+                ],
+                "seconds": 10
+              },
+              {
+                "id": "zancada",
+                "name": "Zancada corta",
+                "time": "19:07–19:12",
+                "dose": "4 repeticiones por lado y por vuelta",
+                "instructions": [
+                  "Mostrá un paso cómodo hacia delante, con el tronco erguido.",
+                  "Pedí una bajada corta y controlada, con el pie delantero firme, y después que cambien la pierna adelantada."
+                ],
+                "seconds": 10
+              },
+              {
+                "id": "talones",
+                "name": "Elevación de talones",
+                "time": "19:07–19:12",
+                "dose": "8 repeticiones por vuelta, 2 vueltas",
+                "instructions": [
+                  "Pedí que suban los dos talones despacio, apoyándose en la parte delantera de los pies.",
+                  "Mirá que bajen con control y sin dejarse caer. Si necesitan equilibrio, permití un apoyo liviano."
+                ],
+                "seconds": 10
+              },
+              {
+                "id": "equilibrio",
+                "name": "Equilibrio sobre una pierna",
+                "time": "19:07–19:12",
+                "dose": "15 segundos por pierna y por vuelta",
+                "instructions": [
+                  "Pedí que levanten un pie, mantengan la pelvis nivelada y miren al frente.",
+                  "Mirá que la rodilla de apoyo quede estable, después hacelas cambiar de pierna."
+                ],
+                "seconds": 36
+              }
             ]
           },
           {
             "id": "pases",
-            "name": "Recibir perfilada y pasar",
+            "number": "9",
+            "name": "Control hacia el cono y devolución",
             "time": "19:12–19:15",
-            "dose": "3 minutos, con cambios de función",
+            "dose": "3 minutos, las dos hacen el control y alternan los pies",
             "instructions": [
-              "Separá las parejas 6–8 m y pedí que miren antes de recibir.",
-              "Mostrá el control de costado hacia el próximo pase, después pedí que pasen y ofrezcan otro apoyo."
+              "Separá a las chicas 6–8 m y colocá dos conos delante de cada una, uno hacia su izquierda y otro hacia su derecha, a 1–1,5 m del lugar de recepción.",
+              "Pedí que reciban en el centro y orienten el control hacia delante con la izquierda, hacia su cono izquierdo. Desde ahí, devuelven el pase y regresan al centro.",
+              "La compañera hace lo mismo desde su lado. En la siguiente recepción, cambian al pie derecho y al cono derecho.",
+              "En un trío, rotá a la tercera después de dos recepciones por jugadora para que todas hagan ambos lados."
             ]
           },
           {
             "id": "progresion",
-            "name": "Progresión y frenada",
+            "number": "10",
+            "name": "Carrera al cono y pared corta",
             "time": "19:15–19:18",
-            "dose": "3 recorridos de 10–15 m, con regreso caminando",
+            "dose": "3 minutos, intercambiando quién corre en cada vuelta",
             "instructions": [
-              "Dejá metros libres después del recorrido para que puedan frenar.",
-              "Pedí que aceleren de a poco y bajen la velocidad con pasos cortos, terminando en equilibrio."
+              "Marcá un cono a 10–12 m del punto donde dejás la pelota. Ubicá una chica junto al cono y a su compañera de frente a la pelota, a 2–3 m de distancia.",
+              "La primera corre a la pelota, frena y hace el pase corto a la compañera. Ella devuelve corto y sale corriendo a rodear el cono.",
+              "Quien recibió la devolución deja la pelota frenada en el punto de pase y ocupa el apoyo de enfrente que dejó su compañera.",
+              "La que corre rodea el cono, vuelve a la pelota y hace la pared corta con la nueva pasadora. Repetí alternando quién corre, sin llevarse la pelota al cono.",
+              "Dejá separados el camino de ida al cono, el regreso a la pelota y el pequeño cambio al puesto de apoyo. En un trío, rotá el apoyo en cada vuelta."
             ]
           }
         ]

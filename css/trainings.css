@@ -155,3 +155,17 @@ dialog.training-media-dialog { width:min(1150px,calc(100vw - 24px)); }
 .training-lineup-team td small { display:block; color:#a39ba9; font-size:.68rem; margin-top:4px; }
 .training-lineup-team > p { color:#a59aaa; font-size:.73rem; line-height:1.6; margin-top:12px; }
 @media (max-width:600px) { .training-roster-grid { grid-template-columns:1fr; }.training-warmup-navigation > span { order:3; width:100%; text-align:center; }.training-warmup-navigation .btn { font-size:.7rem; }.training-lineup-team { padding:12px; } }
+.training-name-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.training-name-heading h3 { margin:0; }
+.training-stage .training-name-list { list-style:none; padding:0; margin:6px 0 0; }
+.training-stage .training-name-list li { display:flex; align-items:center; gap:12px; margin:0; padding:12px 0; border-bottom:1px solid #ffffff14; }
+.training-stage .training-name-list li:last-child { border-bottom:0; }
+.training-name-list strong { color:#e8f0e2; font-size:1rem; font-weight:600; overflow-wrap:anywhere; }
+.training-name-initial { display:grid; place-items:center; width:32px; height:32px; flex:0 0 32px; border-radius:50%; color:#f5e7ee; background:#6c2e47; font-size:.9rem; }
+.training-lineup-team.blue .training-name-initial { background:#254c6d; }
+.training-lineup-team.neutral .training-name-initial { background:#52554b; }
+.training-lineup-team.keeper .training-name-initial { background:#6f522a; }
+.training-mobility-parts { margin:24px 0; padding:18px; background:#c1e4bd06; border:1px solid #adc5a524; border-radius:10px; }
+.training-mobility-parts small { display:block; color:#a9c5aa; margin:4px 0 6px; font-size:.78rem; }
+.training-mobility-parts p { color:#bfb7c6; font-size:.85rem; line-height:1.7; }
+.training-mobility-parts li { margin-bottom:18px; }

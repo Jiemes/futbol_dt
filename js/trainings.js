@@ -1,6 +1,6 @@
 const trainingsManager = {
     sessions: [], current: null, step: 0, fieldPlayers: 10,
-    selectedIds: [], draftIds: new Set(), keeperId: null, rosterSignature: '', warmupIndex: 0, animationFrame: null,
+    selectedIds: [], draftIds: new Set(), keeperId: null, rosterSignature: '', warmupIndex: 0, animationFrame: null, rosterChoiceMade: false, autoRoster: false,
     mediaRoot(session = this.current) { return `images/entrenamientos/${session.id}/`; },
     asset(file) { return `${this.mediaRoot()}${file}?v=20261104-2`; },
     e(value) { return Palometas.escapeHTML(String(value ?? '')); },
@@ -10,7 +10,7 @@ const trainingsManager = {
         this.renderCatalog();
         this.renderHome();
         document.addEventListener('click', event => {
-            const button = event.target.closest('[data-training-open], [data-training-catalog], [data-training-step], [data-training-motion], [data-training-enlarge], [data-training-copy], [data-training-roster-apply], [data-training-roster-clear], [data-training-warmup]');
+            const button = event.target.closest('[data-training-open], [data-training-catalog], [data-training-step], [data-training-motion], [data-training-enlarge], [data-training-copy], [data-training-roster-apply], [data-training-roster-clear], [data-training-warmup], [data-training-pick-roster]');
             if (!button) return;
             if (button.hasAttribute('data-training-open')) this.openSession(button.dataset.trainingOpen);
             else if (button.hasAttribute('data-training-catalog')) this.showCatalog();
@@ -21,6 +21,7 @@ const trainingsManager = {
             else if (button.hasAttribute('data-training-roster-apply')) this.applyRoster();
             else if (button.hasAttribute('data-training-roster-clear')) this.clearRoster();
             else if (button.hasAttribute('data-training-warmup')) this.changeWarmup(Number(button.dataset.trainingWarmup));
+            else if (button.hasAttribute('data-training-pick-roster')) { const picker = document.querySelector('.training-roster'); picker.open = true; picker.scrollIntoView({ block: 'start' }); }
         });
         document.getElementById('training-guide').addEventListener('change', event => {
             if (event.target.id === 'training-warmup-move') { this.changeWarmup(Number(event.target.value)); return; }
@@ -70,7 +71,8 @@ const trainingsManager = {
         const requestedStep = match ? Number(match[1]) - 1 : 0;
         this.step = Math.max(0, Math.min(session.stages.length - 1, requestedStep));
         if (this.current?.id !== session.id) {
-            this.current = session; this.fieldPlayers = this.selectedIds.length || session.defaultFieldPlayers;
+            this.current = session; this.restoreRoster(); this.warmupIndex = 0;
+            this.fieldPlayers = this.selectedIds.length || session.defaultFieldPlayers;
             this.renderGuide();
         }
         catalog.hidden = true; guide.hidden = false;
@@ -84,7 +86,7 @@ const trainingsManager = {
             <div class="training-back-row"><button type="button" class="training-text-button" data-training-catalog>← Todas las fechas</button><button type="button" class="training-text-button" data-training-copy>Copiar enlace al paso</button></div>
             <div class="training-guide-intro"><div><p class="training-upload-label">Fecha de carga · práctica ${this.date(s.date)}</p><h2>${this.date(s.uploadedAt)}</h2><h3>${this.e(s.title)}</h3><p>${this.e(s.objective)}</p><div class="training-tags"><span>${s.start}–${s.end}</span><span>120 min con pausas</span><span>Arquera desde ${s.goalkeeperFrom}</span></div></div><div class="training-count-control"><label for="training-player-count">Jugadoras de campo hoy</label><select id="training-player-count">${[9, 10, 11, 12].map(n => `<option value="${n}" ${n === this.fieldPlayers ? 'selected' : ''}>${n} de campo</option>`).join('')}</select><p>La arquera se cuenta aparte y llega a las ${s.goalkeeperFrom}.</p><strong id="training-attendance" role="status"></strong></div></div>
             <details class="training-preparation"><summary>Antes de empezar · materiales y armado</summary><div class="training-preparation-grid"><div><h3>Materiales</h3><ul>${s.equipment.map(item => `<li>${this.e(item)}</li>`).join('')}</ul></div><div><h3>Preparar el campo</h3><p>${this.e(s.preparation)}</p><p>${this.e(s.coaching)}</p></div></div></details>
-            <details class="training-preparation training-roster"><summary>Dividí y ubicá a las chicas por sus posiciones</summary><p>Marcá quiénes vienen hoy y usá las posiciones que ya cargaste en el plantel. Vas a ver un reparto inicial para cada ejercicio, priorizando el puesto habitual y después la segunda posición.</p><div id="training-roster-picker"></div></details>
+            <details class="training-preparation training-roster"><summary>Elegí a las chicas para formar los grupos</summary><p>Marcá a las presentes y vas a ver directamente sus nombres en cada grupo y sobre el campo.</p><div id="training-roster-picker"></div></details>
             <div class="training-workspace"><nav class="training-timeline" aria-label="Pasos del entrenamiento">${s.stages.map((stage, index) => `<button type="button" class="training-timeline-step" data-training-step="${index}"><span class="training-step-number">${index + 1}</span><span><strong>${this.e(stage.shortTitle)}</strong><small>${stage.start}–${stage.end} · ${stage.minutes} min</small></span>${stage.id === 'integrar-arquera' ? '<span class="training-gk-dot" aria-label="Se incorpora la arquera"></span>' : ''}</button>`).join('')}</nav><article class="training-stage" id="training-stage"></article></div>
             <details class="training-references"><summary>Tus reels guardados</summary><div class="training-reels-grid">${s.references.map(ref => `<a href="https://www.instagram.com/reel/${encodeURIComponent(ref.code)}/" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram" aria-hidden="true"></i><span>${this.e(ref.title)}<small>Abrir en Instagram ↗</small></span></a>`).join('')}</div></details>`;
         this.rosterSignature = ''; this.refreshRoster();
@@ -98,24 +100,46 @@ const trainingsManager = {
         const roster = window.playersManager?.players || [];
         return this.selectedIds.map(id => roster.find(player => player.id === id)).filter(Boolean);
     },
+    restoreRoster() {
+        this.selectedIds = []; this.keeperId = null; this.rosterChoiceMade = false; this.autoRoster = false;
+        try {
+            const saved = JSON.parse(localStorage.getItem(`palometas-training-roster-${this.current.id}`) || 'null');
+            if (saved && Array.isArray(saved.ids) && saved.ids.length <= 12 && (saved.ids.length === 0 || saved.ids.length >= 9) && saved.ids.every(id => typeof id === 'string')) {
+                this.selectedIds = [...new Set(saved.ids)];
+                this.keeperId = typeof saved.keeperId === 'string' ? saved.keeperId : null;
+                this.rosterChoiceMade = true; this.autoRoster = saved.auto === true;
+            }
+        } catch { /* La selección también puede usarse sin almacenamiento local. */ }
+        this.draftIds = new Set(this.selectedIds);
+    },
+    saveRoster() {
+        try { localStorage.setItem(`palometas-training-roster-${this.current.id}`, JSON.stringify({ ids: this.selectedIds, keeperId: this.keeperId, auto: this.autoRoster })); }
+        catch { /* No bloquear el reparto si el navegador no permite guardarlo. */ }
+    },
     renderRoster() {
         const root = document.getElementById('training-roster-picker'); if (!root) return;
         const roster = window.playersManager?.players || [], fields = roster.filter(player => !TrainingLineups.isKeeper(player)), keepers = roster.filter(TrainingLineups.isKeeper);
-        if (!fields.length) { root.innerHTML = '<p class="text-muted">Cuando cargues las chicas en Plantel Sub 17, vas a poder elegirlas acá. Mientras tanto, usá el selector de cantidad y guiáte por los puestos de cada ejercicio.</p>'; return; }
+        if (!fields.length) { root.innerHTML = '<p class="text-muted">Cuando se cargue el plantel, vas a ver los nombres para elegir a las presentes.</p>'; return; }
         const keeperId = this.keeperId === null ? (keepers.length === 1 ? keepers[0].id : '') : this.keeperId;
-        root.innerHTML = `<div class="training-roster-grid">${fields.map(player => `<label class="training-roster-player"><input type="checkbox" data-training-present value="${this.e(player.id)}" ${this.draftIds.has(player.id) ? 'checked' : ''}><span><strong>${this.e(Palometas.nameOf(player))}</strong><small>${this.e(player.position || 'Posición sin completar')}${player.second_position && player.second_position !== '-' ? ' · También ' + this.e(player.second_position) : ''}</small></span></label>`).join('')}</div><label class="training-keeper-select" for="training-keeper-select">Arquera que se suma desde las 20</label><select id="training-keeper-select"><option value="">Asignar después</option>${keepers.map(player => `<option value="${this.e(player.id)}" ${player.id === keeperId ? 'selected' : ''}>${this.e(Palometas.nameOf(player))}</option>`).join('')}</select><div class="button-row training-roster-actions"><strong id="training-roster-count" role="status">${this.draftIds.size} de campo seleccionadas</strong><button type="button" class="btn btn-primary btn-sm" data-training-roster-apply>Usar estas jugadoras</button><button type="button" class="btn btn-secondary btn-sm" data-training-roster-clear>Usar solo puestos</button></div><p id="training-roster-error" class="form-error" role="alert"></p><p class="text-muted">Elegí de 9 a 12 jugadoras de campo. La arquera se suma aparte. Esta selección es para organizar esta visita al entrenamiento.</p>`;
+        root.innerHTML = `<div class="training-roster-grid">${fields.map(player => `<label class="training-roster-player"><input type="checkbox" data-training-present value="${this.e(player.id)}" ${this.draftIds.has(player.id) ? 'checked' : ''}><span><strong>${this.e(Palometas.nameOf(player))}</strong></span></label>`).join('')}</div><label class="training-keeper-select" for="training-keeper-select">Arquera que se suma desde las 20</label><select id="training-keeper-select"><option value="">Asignar después</option>${keepers.map(player => `<option value="${this.e(player.id)}" ${player.id === keeperId ? 'selected' : ''}>${this.e(Palometas.nameOf(player))}</option>`).join('')}</select><div class="button-row training-roster-actions"><strong id="training-roster-count" role="status">${this.draftIds.size} de campo seleccionadas</strong><button type="button" class="btn btn-primary btn-sm" data-training-roster-apply>Usar estas chicas</button><button type="button" class="btn btn-secondary btn-sm" data-training-roster-clear>Limpiar selección</button></div><p id="training-roster-error" class="form-error" role="alert"></p><p class="text-muted">Elegí de 9 a 12 chicas de campo y sumá la arquera aparte. Podés cambiar las presentes antes de cada práctica.</p>`;
     },
     applyRoster() {
         const fields = (window.playersManager?.players || []).filter(player => !TrainingLineups.isKeeper(player));
         const ids = [...document.querySelectorAll('[data-training-present]:checked')].map(input => input.value).filter(id => fields.some(player => player.id === id));
         if (ids.length < 9 || ids.length > 12) { document.getElementById('training-roster-error').textContent = 'Elegí entre 9 y 12 jugadoras de campo para armar este entrenamiento.'; return; }
         this.selectedIds = ids; this.draftIds = new Set(ids); this.keeperId = document.getElementById('training-keeper-select').value;
-        this.fieldPlayers = ids.length; this.updateCount(); this.renderRoster(); this.renderStage();
+        this.fieldPlayers = ids.length; this.rosterChoiceMade = true; this.autoRoster = false; this.saveRoster(); this.updateCount(); this.renderRoster(); this.renderStage();
     },
-    clearRoster() { this.selectedIds = []; this.draftIds.clear(); this.renderRoster(); this.updateCount(); this.renderStage(); },
+    clearRoster() { this.selectedIds = []; this.draftIds.clear(); this.rosterChoiceMade = true; this.autoRoster = false; this.saveRoster(); this.renderRoster(); this.updateCount(); this.renderStage(); },
     refreshRoster() {
         if (!this.current || !document.getElementById('training-roster-picker')) return;
         const roster = window.playersManager?.players || [];
+        if (!roster.length) { this.renderRoster(); this.updateCount(); this.renderStage(); return; }
+        const fields = roster.filter(player => !TrainingLineups.isKeeper(player));
+        if (!this.rosterChoiceMade && fields.length >= 9 && fields.length <= 12) {
+            this.selectedIds = fields.map(player => player.id); this.draftIds = new Set(this.selectedIds);
+            this.rosterChoiceMade = true; this.autoRoster = true; this.saveRoster();
+        }
         const signature = JSON.stringify(roster.map(p => [p.id, p.alias, p.full_name, p.position, p.second_position]));
         if (signature === this.rosterSignature) return;
         this.rosterSignature = signature;
@@ -128,23 +152,25 @@ const trainingsManager = {
     },
     lineupHTML(stage, lineup) {
         if (!stage.positionNotes) return '';
-        const groups = [...lineup.groups];
-        if (lineup.keeper) groups.push({ title: 'Arquera', team: 'keeper', slots: [lineup.keeper] });
-        return `<section class="training-lineups"><h3>Cómo dividirlas y ubicarlas</h3><p>${this.e(stage.positionNotes)}</p>${!lineup.named ? '<p class="training-lineup-hint">Guiáte por estos puestos. Si querés ver los nombres sobre el campo, marcá las presentes en “Dividí y ubicá a las chicas por sus posiciones”.</p>' : '<p class="training-lineup-hint">Tomá este reparto como punto de partida y ajustalo según cómo veas a las chicas hoy. Para las siguientes tandas, hacé los cambios indicados en la consigna.</p>'}<div class="training-lineup-grid">${groups.map(group => `<div class="training-lineup-team ${group.team}"><h4>${this.e(group.title)}</h4><table><thead><tr><th scope="col">Puesto</th><th scope="col">${lineup.named ? 'Jugadora' : 'Buscá este perfil'}</th></tr></thead><tbody>${group.slots.map(slot => `<tr><th scope="row"><b>${this.e(slot.code)}</b> ${this.e(slot.label)}</th><td>${slot.player ? `<strong>${this.e(Palometas.nameOf(slot.player))}</strong><small>${this.e(slot.player.position || 'Posición sin completar')}${slot.adapted ? ' · Adaptá este puesto para el ejercicio' : ''}</small>` : this.e(slot.prefer?.includes('back') ? 'Defensora central' : slot.prefer?.includes('mid') ? 'Mediocampista' : slot.prefer?.includes('front') ? 'Delantera o extrema' : slot.prefer?.includes('wide') ? 'Lateral o extrema' : slot.code === 'ARQ' ? 'Arquera desde las 20' : slot.label)}</td></tr>`).join('')}</tbody></table>${group.note ? `<p>${this.e(group.note)}</p>` : ''}</div>`).join('')}</div></section>`;
+        if (!lineup.named) return '<section class="training-lineups"><h3>Los grupos por nombre</h3><p>Marcá a las chicas que vienen hoy para ver directamente quién va en cada grupo.</p><button type="button" class="btn btn-primary btn-sm" data-training-pick-roster>Elegir las presentes</button></section>';
+        let groups = [...lineup.groups];
+        if (stage.type === 'warmup' && this.warmupIndex === 0) groups = [{ title: 'Movilidad · todas juntas', team: 'red', slots: groups.flatMap(group => group.slots) }];
+        if (lineup.keeper) groups.push({ title: 'Arquera · desde las 20', team: 'keeper', slots: [lineup.keeper] });
+        return `<section class="training-lineups"><div class="training-name-heading"><h3>Las chicas para este ejercicio</h3><button type="button" class="training-text-button" data-training-pick-roster>Cambiar presentes</button></div>${this.autoRoster ? '<p class="training-lineup-hint">Armé el reparto con todas las chicas cargadas en el plantel. Cambiá las presentes si hoy falta alguna.</p>' : ''}<div class="training-lineup-grid">${groups.map(group => `<div class="training-lineup-team ${group.team}"><h4>${this.e(group.title)}</h4><ul class="training-name-list">${group.slots.map(slot => `<li>${slot.player ? `<span class="training-name-initial" aria-hidden="true">${this.e(Palometas.nameOf(slot.player).trim().charAt(0))}</span><strong>${this.e(Palometas.nameOf(slot.player))}</strong>` : '<span>Elegí quién se suma como arquera.</span>'}</li>`).join('')}</ul>${group.note ? `<p>${this.e(group.note)}</p>` : ''}</div>`).join('')}</div></section>`;
     },
     warmupDemoHTML() {
-        const move = this.current.stages[this.step].moves[this.warmupIndex];
-        return `<p class="training-warmup-dose"><strong>${this.e(move.time)}</strong> · ${this.e(move.dose)}</p><figure class="training-media"><div class="training-static">${WarmupMotions.render(move.id)}</div><div class="training-motion" data-warmup="${this.e(move.id)}" hidden></div><figcaption><span>Mostrá el movimiento y usá estas indicaciones para guiar a las chicas.</span><div class="training-media-actions"><button type="button" class="btn btn-primary btn-sm" data-training-motion aria-pressed="false">▶ Ver movimiento</button><button type="button" class="btn btn-secondary btn-sm" data-training-enlarge>Ampliar preparación</button></div></figcaption></figure><div class="training-warmup-instructions">${this.list(move.instructions, true)}</div><div class="training-warmup-navigation"><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex - 1}" ${this.warmupIndex === 0 ? 'disabled' : ''}>← Movimiento anterior</button><span>${this.warmupIndex + 1} de ${this.current.stages[this.step].moves.length}</span><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex + 1}" ${this.warmupIndex === this.current.stages[this.step].moves.length - 1 ? 'disabled' : ''}>Próximo movimiento →</button></div>`;
+        const moves = this.current.stages[this.step].moves, move = moves[this.warmupIndex];
+        const parts = move.parts ? `<div class="training-mobility-parts"><h4>Todo dentro de Movilidad</h4><ol>${move.parts.map(part => `<li><strong>${this.e(part.name)}</strong><small>${this.e(part.dose)}</small><p>${part.instructions.map(item => this.e(item)).join(' ')}</p></li>`).join('')}</ol></div>` : '';
+        return `<p class="training-warmup-dose"><strong>${this.e(move.time)}</strong> · ${this.e(move.dose)}</p><figure class="training-media"><div class="training-static">${WarmupMotions.render(move.id, 0, move.parts)}</div><div class="training-motion" data-warmup="${this.e(move.id)}" hidden></div><figcaption><span>${move.parts ? 'Mostrá la secuencia de Movilidad, los ocho movimientos avanzan automáticamente uno detrás de otro.' : 'Mostrá el ejercicio y usá estas indicaciones para guiar a las chicas.'}</span><div class="training-media-actions"><button type="button" class="btn btn-primary btn-sm" data-training-motion aria-pressed="false">▶ Ver movimiento</button><button type="button" class="btn btn-secondary btn-sm" data-training-enlarge>Ampliar preparación</button></div></figcaption></figure><div class="training-warmup-instructions">${this.list(move.instructions, true)}${parts}</div><div class="training-warmup-navigation"><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex - 1}" ${this.warmupIndex === 0 ? 'disabled' : ''}>← Ejercicio anterior</button><span>${this.warmupIndex + 1} de ${moves.length} ejercicios</span><button type="button" class="btn btn-secondary btn-sm" data-training-warmup="${this.warmupIndex + 1}" ${this.warmupIndex === moves.length - 1 ? 'disabled' : ''}>Próximo ejercicio →</button></div>`;
     },
     warmupHTML(stage) {
-        return `<section class="training-warmup"><label for="training-warmup-move">Elegí el movimiento que querés ver</label><select id="training-warmup-move">${stage.moves.map((move, i) => `<option value="${i}" ${i === this.warmupIndex ? 'selected' : ''}>${i + 1}. ${this.e(move.name)}</option>`).join('')}</select><div id="training-warmup-example">${this.warmupDemoHTML()}</div></section>`;
+        return `<section class="training-warmup"><label for="training-warmup-move">Elegí el ejercicio que querés ver</label><select id="training-warmup-move">${stage.moves.map((move, i) => `<option value="${i}" ${i === this.warmupIndex ? 'selected' : ''}>${this.e(move.number || i + 1)}. ${this.e(move.name)}</option>`).join('')}</select><div id="training-warmup-example">${this.warmupDemoHTML()}</div></section>`;
     },
     changeWarmup(index) {
         const moves = this.current?.stages[this.step].moves;
         if (!moves || !Number.isInteger(index) || index < 0 || index >= moves.length) return;
-        this.stopWarmup(); this.warmupIndex = index;
-        document.getElementById('training-warmup-move').value = String(index);
-        document.getElementById('training-warmup-example').innerHTML = this.warmupDemoHTML();
+        this.stopWarmup(); this.warmupIndex = index; this.renderStage();
+        document.getElementById('training-warmup-move').focus({ preventScroll: true });
     },
     stopWarmup() {
         if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
@@ -203,9 +229,10 @@ const trainingsManager = {
             this.stopWarmup(); motion.hidden = false; media.querySelector('.training-static').hidden = true;
             button.setAttribute('aria-pressed', 'true'); button.textContent = '■ Ver preparación';
             const start = performance.now(); let previous = -100;
+            const move = this.current.stages[this.step].moves.find(item => item.id === motion.dataset.warmup);
             const animate = now => {
                 if (!motion.isConnected || motion.hidden) { this.animationFrame = null; return; }
-                if (now - previous >= 33) { motion.innerHTML = WarmupMotions.render(motion.dataset.warmup, (now - start) / 1000); previous = now; }
+                if (now - previous >= 33) { motion.innerHTML = WarmupMotions.render(motion.dataset.warmup, (now - start) / 1000, move?.parts); previous = now; }
                 this.animationFrame = requestAnimationFrame(animate);
             };
             this.animationFrame = requestAnimationFrame(animate); return;

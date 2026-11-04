@@ -23,6 +23,7 @@ window.TrainingBoards = (() => {
     }
     function person(x, y, team, label = '', name = '') {
         const short = name.length > 14 ? name.slice(0, 13) + '…' : name;
+        if (name) label = name.trim().split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
         return `<g transform="translate(${x} ${y})"><title>${safe(name || label)}</title><circle cy="3" r="17" fill="#092c27"/><circle r="17" fill="${colors[team]}" stroke="#fff8ee" stroke-width="2"/><text text-anchor="middle" y="6" fill="${team === 'neutral' ? '#17382f' : '#fff'}" font-family="Arial,sans-serif" font-weight="700" font-size="${String(label).length > 2 ? 12 : 15}">${safe(label)}</text>${name ? `<rect x="-53" y="${team === 'blue' ? -42 : 20}" width="106" height="19" rx="4" fill="#0c2d26"/><text y="${team === 'blue' ? -28 : 34}" text-anchor="middle" fill="#fff7e9" font-family="Arial,sans-serif" font-size="12">${safe(short)}</text>` : ''}</g>`;
     }
     function cone(x, y) { return `<path d="M${x},${y - 8} l-6,12 h12 z" fill="#ffbd61" stroke="#472e0c" stroke-width="1"/>`; }
@@ -52,7 +53,7 @@ window.TrainingBoards = (() => {
             goal(true); gate(false);
             if (type === 'game') s += `<path d="M${x},${y + h / 2} h${w}" stroke="#d3ebdb" stroke-opacity=".4" stroke-dasharray="8 8"/><text x="450" y="552" fill="#c0d9cc" text-anchor="middle" font-family="Arial,sans-serif" font-size="18">Cambiá el equipo que ataca el arco en cada pausa</text>`;
         }
-        lineup.groups.forEach(group => group.slots.forEach(slot => { s += person(...xy(slot.point), group.team, slot.code, slot.player ? Palometas.nameOf(slot.player) : ''); }));
+        lineup.groups.forEach(group => group.slots.forEach((slot, index) => { s += person(...xy(slot.point), group.team, index + 1, slot.player ? Palometas.nameOf(slot.player) : ''); }));
         if (lineup.keeper) s += person(...xy(lineup.keeper.point), 'keeper', 'ARQ', lineup.keeper.player ? Palometas.nameOf(lineup.keeper.player) : '');
         const start = lineup.keeper?.point || lineup.groups[0].slots[0].point;
         s += ball(...xy([start[0] + .025, start[1] - .03]));

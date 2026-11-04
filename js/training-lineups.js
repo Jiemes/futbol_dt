@@ -25,7 +25,7 @@ window.TrainingLineups = (() => {
             if (n % 2) sizes[sizes.length - 1] = 3;
             return sizes.map((size, i) => ({ id: 'pair-' + i, title: size === 3 ? 'Trío de pases' : 'Pareja ' + (i + 1), team: 'red',
                 slots: [role('1', 'Primera pasadora', i % 2 ? ['wide', 'wing'] : ['back', 'wide']), role('2', 'Receptora', i % 2 ? ['front', 'mid'] : ['mid', 'front']), role('3', 'Tercer apoyo', ['any'])].slice(0, size),
-                note: 'Usá este reparto de 19:12 a 19:15, durante la movilidad trabajan todas a la vez.' }));
+                note: 'Usá esta pareja en los ejercicios 9 y 10. En el trío, rotá quién hace el apoyo en cada vuelta.' }));
         }
         if (type === 'cooldown') return [];
         const d = TrainingBoards.distribution(type, n);

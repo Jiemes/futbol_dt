@@ -8,3 +8,5 @@ Proyecto: ENTRENADOR DE FUTBOL FEMENINO SUB 17 PALOMETAS.
 - En Entrenamientos, dirigir las indicaciones a Juan con voseo, él lee y guía la práctica. Usar comas en lugar de puntos y coma en los textos visibles.
 - No mostrar comentarios ni enlaces de FIFA 11+ u otras fuentes de preparación en el recorrido. Mantener las consignas prácticas.
 - Usar posición habitual y segunda posición del plantel para sugerir grupos y puestos, sin modificar las fichas al organizar una práctica.
+- Mostrar los grupos por los nombres de las chicas, las posiciones sirven como criterio interno para repartirlas.
+- En activación, los primeros ocho movimientos forman una única secuencia continua de Movilidad. Mantener separados el ejercicio 9 de control con conos y el 10 de carrera con pared corta y cambio de corredora.

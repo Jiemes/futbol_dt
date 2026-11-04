@@ -90,33 +90,92 @@ window.WarmupMotions = (() => {
         }
         return { p, phase, side: true };
     }
-    function running(t) {
-        const u = t % 14; let x, amplitude, phase;
-        if (u < 4) { x = 140 + 330 * (u / 4) ** 1.5; amplitude = 26 + u * 5; phase = 'Aumentá la velocidad de a poco, sin llegar al máximo'; }
-        else if (u < 6) { x = 470 + 200 * (1 - (1 - (u - 4) / 2) ** 2); amplitude = 32 - 11 * (u - 4); phase = 'Acortá los pasos y bajá la velocidad antes de detenerte'; }
-        else if (u < 7) { x = 670; amplitude = 0; phase = 'Terminá la frenada con equilibrio'; }
-        else { x = 670 - 530 * (u - 7) / 7; amplitude = 17; phase = 'Volvé caminando y prepará la siguiente progresión'; }
-        const pose = sidePose('none', t).p, swing = Math.sin(t * Math.PI * (u < 6 ? 3 : 1.8));
-        pose.lk = [450 - amplitude * swing, 390]; pose.rk = [470 + amplitude * swing, 390];
-        pose.la = [438 - amplitude * swing, 454 - Math.max(0, swing) * amplitude]; pose.ra = [480 + amplitude * swing, 454 - Math.max(0, -swing) * amplitude];
-        pose.lf = [[pose.la[0] - 10, pose.la[1] + 10], [pose.la[0] + 23, pose.la[1] + 10]]; pose.rf = [[pose.ra[0] - 10, pose.ra[1] + 10], [pose.ra[0] + 23, pose.ra[1] + 10]];
-        const mirror = u >= 7 ? 'translate(900 0) scale(-1 1)' : '';
-        return { body: `<path d="M120,460 H780" stroke="#8db79d" stroke-width="2" stroke-dasharray="10 9"/><text x="450" y="493" text-anchor="middle" fill="#b9d1bf" font-size="18">10–15 metros · dejá espacio para frenar</text><g transform="translate(${x - 450 * .7} 137) scale(.7)"><g transform="${mirror}">${athlete(pose, true)}</g></g>`, phase };
+    function track(keys, t, smooth = true) {
+        if (t <= keys[0][0]) return keys[0][1];
+        for (let i = 1; i < keys.length; i++) {
+            if (t > keys[i][0]) continue;
+            const [start, a] = keys[i - 1], [end, b] = keys[i], ratio = clamp((t - start) / (end - start));
+            const f = smooth ? ease(ratio) : ratio;
+            return [mix(a[0], b[0], f), mix(a[1], b[1], f)];
+        }
+        return keys[keys.length - 1][1];
     }
+    function cone(x, y, label = '') {
+        return `<path d="M${x},${y - 12} l-10,23 h20 z" fill="#ffb95e" stroke="#3b3926" stroke-width="2"/>${label ? `<text x="${x}" y="${y + 39}" text-anchor="middle" fill="#d2d8b7" font-size="14">${label}</text>` : ''}`;
+    }
+    function footballer(p, angle, label, foot = '') {
+        const color = label === 'A' ? '#ce3158' : '#318fd8';
+        return `<g transform="translate(${point(p)})"><g transform="rotate(${angle})"><ellipse cx="-8" cy="-25" rx="6" ry="10" fill="${foot === 'I' ? '#9ee8bb' : '#f4eee3'}"/><ellipse cx="8" cy="-25" rx="6" ry="10" fill="${foot === 'D' ? '#9ee8bb' : '#f4eee3'}"/><ellipse rx="21" ry="23" fill="${color}" stroke="#fff7e9" stroke-width="2"/><path d="M-23,0 v18 M23,0 v18" stroke="#deb38b" stroke-width="9" stroke-linecap="round"/><circle cy="-6" r="13" fill="#e0b994"/></g><rect x="-15" y="34" width="30" height="23" rx="5" fill="#0d3026"/><text y="51" text-anchor="middle" fill="#fff8e9" font-size="17" font-weight="700">${label}</text></g>`;
+    }
+    function field() {
+        return '<rect x="100" y="140" width="700" height="330" rx="12" fill="#1c5541" stroke="#9bc9ae" stroke-width="2"/>';
+    }
+    function ball(p) { return `<circle cx="${p[0]}" cy="${p[1]}" r="9" fill="#ffe059" stroke="#17392c" stroke-width="2"/>`; }
     function passing(t) {
-        const u = t % 10;
-        const receive = u < 2 ? 0 : u < 4 ? ease((u - 2) / 2) : u < 7 ? 1 : 1 - ease((u - 7) / 3);
-        let bx, by;
-        if (u < 2) { bx = mix(225, 660, ease(u / 2)); by = 345; }
-        else if (u < 4) { bx = 660; by = mix(345, 280, ease((u - 2) / 2)); }
-        else if (u < 7) { bx = mix(660, 225, ease((u - 4) / 3)); by = mix(280, 345, ease((u - 4) / 3)); }
-        else { bx = 225; by = 345; }
-        const person = (x, y, angle) => `<g transform="translate(${x} ${y}) rotate(${angle})"><ellipse rx="23" ry="33" fill="#cc3b61" stroke="#fff5e6" stroke-width="2"/><circle cy="-7" r="15" fill="#e0b994"/><path d="M-24,-3 V22 M24,-3 V22" stroke="#ddb28b" stroke-width="9" stroke-linecap="round"/></g>`;
-        return { body: `<rect x="135" y="170" width="630" height="290" rx="12" fill="#1d5540" stroke="#b2d5ba"/><path d="M245 345 640 345 640 260" fill="none" stroke="#d9edd5" stroke-width="3" stroke-dasharray="10 8"/>${person(210, 350, 90)}${person(660, 345 - 65 * receive, -45)}<circle cx="${bx + 15}" cy="${by + 16}" r="10" fill="#ffe059" stroke="#17392c" stroke-width="2"/><text x="450" y="492" text-anchor="middle" fill="#c0d7c5" font-size="18">6–8 metros · pasá y ofrecé otro apoyo</text>`, phase: u < 2 ? 'Pasá a tu compañera, que mire antes de recibir' : u < 4 ? 'Recibí de costado y orientá el primer toque' : 'Devolvé un pase preciso y volvé a ofrecerte' };
+        // Izquierda y derecha se leen desde la orientación de cada jugadora.
+        const duration = 3.8, u = t % (duration * 4), turn = Math.floor(u / duration), local = u - turn * duration;
+        const owner = turn % 2, foot = turn < 2 ? 'I' : 'D';
+        const centers = [[235, 310], [665, 310]], fronts = [[260, 310], [640, 310]];
+        const targets = [[300, foot === 'I' ? 255 : 365], [600, foot === 'I' ? 365 : 255]];
+        const recipient = 1 - owner, target = targets[owner];
+        const control = ease(local / 2), returning = ease((local - 2) / 1.8);
+        let location;
+        const positions = centers.map(p => [...p]);
+        if (local < 2) {
+            location = [mix(fronts[owner][0], target[0], control), mix(fronts[owner][1], target[1], control)];
+            positions[owner] = [location[0] + (owner ? 25 : -25), location[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
+        } else {
+            location = [mix(target[0], fronts[recipient][0], returning), mix(target[1], fronts[recipient][1], returning)];
+            const last = [target[0] + (owner ? 25 : -25), target[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
+            positions[owner] = [mix(last[0], centers[owner][0], returning), mix(last[1], centers[owner][1], returning)];
+        }
+        let body = field();
+        [[300, 235, 'I'], [300, 385, 'D'], [600, 235, 'D'], [600, 385, 'I']].forEach(p => { body += cone(...p); });
+        body += `<path d="M${point(fronts[owner])} L${point(target)}" fill="none" stroke="#9ee8bb" stroke-width="3"/><path d="M${point(target)} L${point(fronts[recipient])}" fill="none" stroke="#fff5e5" stroke-width="2" stroke-dasharray="9 8"/>`;
+        body += footballer(positions[0], 90, 'A', owner === 0 && local < 2 ? foot : '') + footballer(positions[1], 270, 'B', owner === 1 && local < 2 ? foot : '') + ball(location);
+        body += '<text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="17">6–8 m entre chicas · conos a 1–1,5 m · I y D desde cada jugadora</text>';
+        const who = owner ? 'B' : 'A', side = foot === 'I' ? 'izquierda' : 'derecha';
+        return { body, phase: local < 2 ? `${who}, controlá hacia delante con la ${side}, hacia tu cono ${foot === 'I' ? 'izquierdo' : 'derecho'}` : `${who}, devolvé el pase y volvé al centro, ahora recibe ${recipient ? 'B' : 'A'}` };
     }
-    function render(id, t = 0) {
-        let body, phase, view;
-        if (id === 'progresion') { ({ body, phase } = running(t)); view = 'PROGRESAR Y FRENAR'; }
+    function running(t) {
+        const meeting = [560, 315], support = [715, 315], parked = [584, 315], supportFoot = [690, 315];
+        const runnerKeys = [[0, support], [.7, [670, 240]], [2.7, [235, 240]], [3.3, [150, 285]], [3.8, [150, 345]], [4.4, [235, 390]], [5.6, [510, 360]], [6, meeting], [8, meeting]];
+        const swapKeys = [[0, meeting], [.7, [605, 400]], [1.3, [715, 400]], [2, support], [8, support]];
+        const facing = (keys, time, fallback) => {
+            const a = track(keys, time, false), b = track(keys, time + .02, false);
+            return Math.hypot(b[0] - a[0], b[1] - a[1]) < .01 ? fallback : Math.atan2(b[0] - a[0], a[1] - b[1]) * 180 / Math.PI;
+        };
+        let positions, angles, location, phase;
+        if (t < 5) {
+            positions = [track([[0, [215, 315]], [3, meeting], [5, meeting]], t), support]; angles = [90, 270];
+            location = t < 3 ? parked : t < 4 ? track([[3, parked], [4, supportFoot]], t) : track([[4, supportFoot], [5, parked]], t);
+            phase = t < 3 ? 'A corre desde el cono a la pelota' : t < 4 ? 'A frena y da un pase corto a B' : 'B devuelve corto y se prepara para correr al cono';
+        } else {
+            const cycle = (t - 5) % 16, half = Math.floor(cycle / 8), u = cycle % 8;
+            const runner = half === 0 ? 1 : 0, other = 1 - runner;
+            positions = []; angles = [];
+            positions[runner] = track(runnerKeys, u, false); positions[other] = track(swapKeys, u, false);
+            angles[runner] = facing(runnerKeys, u, 90); angles[other] = facing(swapKeys, u, 270);
+            location = u < 6 ? parked : u < 7 ? track([[6, parked], [7, supportFoot]], u) : track([[7, supportFoot], [8, parked]], u);
+            const who = runner ? 'B' : 'A', partner = other ? 'B' : 'A';
+            phase = u < 2 ? `${who} va al cono, ${partner} deja la pelota y ocupa el apoyo de enfrente` : u < 4.4 ? `${who} rodea el cono y vuelve, la pelota queda preparada` : u < 6 ? `${who} vuelve a la pelota y se prepara para el pase corto` : u < 7 ? `${who} pasa corto a ${partner}` : `${partner} devuelve corto, ahora le toca correr al cono`;
+        }
+        let body = field() + cone(185, 315, 'Cono de giro');
+        body += '<path d="M715,300 L670,240 H235 Q135,240 150,315 Q135,390 235,390 L510,360 560,315" fill="none" stroke="#9acbab" stroke-width="2" stroke-dasharray="9 8"/><path d="M584,315 H690" fill="none" stroke="#fff8e9" stroke-width="3" stroke-dasharray="8 7"/><circle cx="584" cy="315" r="17" fill="none" stroke="#ffe059" stroke-opacity=".55"/><text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="17">10–12 m al cono · pase corto de 2–3 m · cambia quién corre en cada vuelta</text>';
+        body += footballer(positions[0], angles[0], 'A') + footballer(positions[1], angles[1], 'B') + ball(location);
+        return { body, phase };
+    }
+    function render(id, t = 0, sequence = []) {
+        let body, phase, view, sequenceTitle = '', progress = '';
+        if (id === 'movilidad' && sequence.length) {
+            const total = sequence.reduce((sum, part) => sum + part.seconds, 0), elapsed = t % total;
+            let start = 0, index = 0;
+            for (; index < sequence.length - 1; index++) { if (elapsed < start + sequence[index].seconds) break; start += sequence[index].seconds; }
+            const part = sequence[index]; id = part.id; t = elapsed - start;
+            sequenceTitle = `MOVILIDAD · ${index + 1} DE ${sequence.length} · ${part.name.toUpperCase()}`;
+            progress = `<rect x="32" y="105" width="836" height="4" rx="2" fill="#ffffff20"/><rect x="32" y="105" width="${836 * elapsed / total}" height="4" rx="2" fill="#a7d6af"/>`;
+        }
+        if (id === 'progresion') { ({ body, phase } = running(t)); view = 'CARRERA, PARED CORTA Y CAMBIO · VISTA DESDE ARRIBA'; }
         else if (id === 'pases') { ({ body, phase } = passing(t)); view = 'CONTROL Y PASE · VISTA DESDE ARRIBA'; }
         else {
             const info = ['tobillo', 'sentadilla', 'zancada', 'talones'].includes(id) ? sidePose(id, t) : frontPose(id, t);
@@ -124,7 +183,7 @@ window.WarmupMotions = (() => {
             phase = info.phase; view = info.side ? 'VISTA LATERAL' : 'VISTA DE FRENTE';
         }
         const e = Palometas.escapeHTML;
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" role="img" aria-label="${e(phase)}" font-family="Arial,sans-serif"><rect width="900" height="580" rx="18" fill="#102c27"/><text x="32" y="37" fill="#99cbb6" font-size="14" letter-spacing="3">PALOMETAS · ACTIVACIÓN</text><text x="32" y="76" fill="#c8d9b8" font-size="18" letter-spacing="1">${view}</text>${body}<rect x="22" y="519" width="856" height="43" rx="8" fill="#1c3d30"/><text x="450" y="546" text-anchor="middle" fill="#eff3e4" font-size="16">${e(phase)}</text></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" role="img" aria-label="${e((sequenceTitle ? sequenceTitle + '. ' : '') + phase)}" font-family="Arial,sans-serif"><rect width="900" height="580" rx="18" fill="#102c27"/><text x="32" y="37" fill="#99cbb6" font-size="14" letter-spacing="3">PALOMETAS · ACTIVACIÓN</text><text x="32" y="76" fill="#c8d9b8" font-size="18" letter-spacing="1">${e(sequenceTitle || view)}</text>${progress}${body}<rect x="22" y="519" width="856" height="43" rx="8" fill="#1c3d30"/><text x="450" y="546" text-anchor="middle" fill="#eff3e4" font-size="16">${e(phase)}</text></svg>`;
     }
     return { render };
 })();
