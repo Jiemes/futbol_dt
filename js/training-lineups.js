@@ -25,8 +25,9 @@ window.TrainingLineups = (() => {
             if (n % 2) sizes[sizes.length - 1] = 3;
             return sizes.map((size, i) => ({ id: 'pair-' + i, title: size === 3 ? 'Trío de pases' : 'Pareja ' + (i + 1), team: 'red',
                 slots: [role('1', 'Primera pasadora', i % 2 ? ['wide', 'wing'] : ['back', 'wide']), role('2', 'Receptora', i % 2 ? ['front', 'mid'] : ['mid', 'front']), role('3', 'Tercer apoyo', ['any'])].slice(0, size),
-                note: 'Mantené este grupo en todas las variantes. En el trío, rotá el apoyo después de cada vuelta.' }));
+                note: 'Mantené este grupo en todas las variantes. En el trío, rotá después de dos secuencias completas.' }));
         }
+        if (type === 'finishing') return [{ id: 'finishing-queue', title: 'Fila de definición · todas juntas', team: 'red', slots: Array.from({ length: n }, (_, i) => role(String(i + 1), 'Turno ' + (i + 1), ['any'])), note: 'Una pelota por chica. Mantené este orden y cambiá de puesto cuando todas terminen.' }];
         if (type === 'cooldown') return [];
         const d = TrainingBoards.distribution(type, n);
         let red, blue, neutral = [];
@@ -77,7 +78,7 @@ window.TrainingLineups = (() => {
             best(0, 0); let mask = 0;
             slots.forEach(slot => { const index = choices.get(mask); slot.player = players[index]; slot.adapted = score(slot.player, slot) < 40; mask |= (1 << index); });
         }
-        const withKeeper = ['build-gk', 'attack', 'game'].includes(type);
+        const withKeeper = ['build-gk', 'attack', 'game', 'finishing'].includes(type);
         return { groups, keeper: withKeeper ? { code: 'ARQ', label: 'Arquera, desde las 20', player: keeper, point: type === 'build-gk' ? [.5, .94] : [.5, .065] } : null, named: players.length === n };
     }
     return { family, isKeeper, name, create };

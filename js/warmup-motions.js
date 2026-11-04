@@ -103,94 +103,219 @@ window.WarmupMotions = (() => {
     function cone(x, y, label = '', color = '#ffb95e') {
         return `<path d="M${x},${y - 12} l-10,23 h20 z" fill="${color}" stroke="#3b3926" stroke-width="2"/>${label ? `<text x="${x}" y="${y + 39}" text-anchor="middle" fill="#d2d8b7" font-size="14">${label}</text>` : ''}`;
     }
-    function footballer(p, angle, label, foot = '') {
-        const color = label === 'A' ? '#ce3158' : '#318fd8';
-        return `<g transform="translate(${point(p)})"><g transform="rotate(${angle})"><ellipse cx="-8" cy="-25" rx="6" ry="10" fill="${foot === 'I' ? '#9ee8bb' : '#f4eee3'}"/><ellipse cx="8" cy="-25" rx="6" ry="10" fill="${foot === 'D' ? '#9ee8bb' : '#f4eee3'}"/><ellipse rx="21" ry="23" fill="${color}" stroke="#fff7e9" stroke-width="2"/><path d="M-23,0 v18 M23,0 v18" stroke="#deb38b" stroke-width="9" stroke-linecap="round"/><circle cy="-6" r="13" fill="#e0b994"/></g><rect x="-15" y="34" width="30" height="23" rx="5" fill="#0d3026"/><text y="51" text-anchor="middle" fill="#fff8e9" font-size="17" font-weight="700">${label}</text></g>`;
+    function footballer(p, angle, label, foot = '', handTarget = null) {
+        const color = label === 'ARQ' ? '#f4aa3b' : label === 'B' ? '#318fd8' : '#ce3158';
+        return `<g transform="translate(${point(p)}) scale(.8)"><g transform="rotate(${angle})"><ellipse cx="-8" cy="-25" rx="6" ry="10" fill="${foot === 'I' ? '#9ee8bb' : '#f4eee3'}"/><ellipse cx="8" cy="-25" rx="6" ry="10" fill="${foot === 'D' ? '#9ee8bb' : '#f4eee3'}"/><ellipse rx="21" ry="23" fill="${color}" stroke="#fff7e9" stroke-width="2"/><path d="M-23,0 v18 M23,0 v18" stroke="#deb38b" stroke-width="9" stroke-linecap="round"/><circle cy="-6" r="13" fill="#e0b994"/></g><rect x="-15" y="34" width="30" height="23" rx="5" fill="#0d3026"/><text y="51" text-anchor="middle" fill="#fff8e9" font-size="17" font-weight="700">${label}</text></g>${handTarget ? `<path d="M${p[0]},${p[1]} L${handTarget[0]},${handTarget[1]}" stroke="#deb38b" stroke-width="7" stroke-linecap="round"/><circle cx="${handTarget[0]}" cy="${handTarget[1]}" r="4" fill="#e0b994"/>` : ''}`;
     }
     function field() {
         return '<rect x="100" y="140" width="700" height="330" rx="12" fill="#1c5541" stroke="#9bc9ae" stroke-width="2"/>';
     }
     function ball(p) { return `<circle cx="${p[0]}" cy="${p[1]}" r="9" fill="#ffe059" stroke="#17392c" stroke-width="2"/>`; }
-    const lane = { centers: [[500, 310], [752, 310]], fronts: [[525, 310], [727, 310]], meeting: [500, 310], parked: [525, 310], support: [608, 310], supportFoot: [583, 310] };
+    // Escala de referencia, 100 unidades equivalen a un metro.
+    const lane = { centerCones: [[350, 310], [550, 310]], centers: [[380, 310], [520, 310]], fronts: [[400, 310], [500, 310]], rears: [[150, 310], [750, 310]] };
+    const face = owner => owner === 0 ? 90 : 270;
+    const local = (owner, p) => [lane.centerCones[owner][0] + (owner === 0 ? p[0] : -p[0]), 310 + (owner === 0 ? -p[1] : p[1])];
+    const copyCenters = () => lane.centers.map(p => [...p]);
+    const footAt = turn => turn < 2 ? 'I' : 'D';
+    function target(owner, foot, deep = false) { return local(owner, [deep ? 110 : 55, (foot === 'I' ? 1 : -1) * (deep ? 25 : 40)]); }
+    function controlBody(owner, location, foot) { return [location[0] + (owner ? 20 : -20), location[1] + (owner ? -1 : 1) * (foot === 'I' ? 6.4 : -6.4)]; }
+    function heading(a, b, fallback) { return Math.hypot(b[0] - a[0], b[1] - a[1]) < .01 ? fallback : Math.atan2(b[0] - a[0], a[1] - b[1]) * 180 / Math.PI; }
+    function pathPose(keys, t, fallback) {
+        const p = track(keys, t, false);
+        return { p, angle: heading(p, track(keys, t + .002, false), fallback) };
+    }
+    function ahead(p, angle) { const rad = angle * Math.PI / 180; return [p[0] + 20 * Math.sin(rad), p[1] - 20 * Math.cos(rad)]; }
     function laneField() {
-        return field() + cone(140, 310, 'Giro') + cone(550, 250, 'I', '#71c3e7') + cone(550, 370, 'D', '#e6698d') + cone(702, 250, 'D', '#e6698d') + cone(702, 370, 'I', '#71c3e7');
+        return field() + cone(350, 310, 'C', '#e8dfb7') + cone(550, 310, 'C', '#e8dfb7') + cone(420, 240, 'I', '#71c3e7') + cone(420, 380, 'D', '#e6698d') + cone(480, 240, 'D', '#e6698d') + cone(480, 380, 'I', '#71c3e7') + cone(150, 310, 'Atrás') + cone(750, 310, 'Atrás');
     }
     function setup() {
-        return frame('UN SOLO ARMADO · CINCO CONOS POR PAREJA', laneField() + footballer(lane.centers[0], 90, 'A') + footballer(lane.centers[1], 270, 'B') + ball(lane.fronts[0]) + '<path d="M140,194 H500 M500,181 V207 M140,181 V207" fill="none" stroke="#c8dfca"/><text x="320" y="180" text-anchor="middle" fill="#c8dfca" font-size="17">10–12 m hasta el giro</text><path d="M500,440 H752" stroke="#c8dfca"/><text x="626" y="463" text-anchor="middle" fill="#c8dfca" font-size="16">6–8 m entre A y B</text>', 'Dejá los cinco conos fijos, en las carreras B se acerca para el pase corto');
+        const measures = '<path d="M350,180 H550 M350,170 V190 M550,170 V190" fill="none" stroke="#c8dfca"/><text x="450" y="165" text-anchor="middle" fill="#dcebd3" font-size="17">2 m entre centros</text><path d="M350,310 L420,240" stroke="#dcebd3" stroke-dasharray="5 5"/><text x="365" y="252" fill="#dcebd3" font-size="16">1 m</text><path d="M150,435 H350 M550,435 H750" stroke="#c8dfca"/><text x="250" y="463" text-anchor="middle" fill="#c8dfca" font-size="15">2 m de apoyo trasero</text><text x="650" y="463" text-anchor="middle" fill="#c8dfca" font-size="15">2 m de apoyo trasero</text>';
+        return frame('DOS TRIÁNGULOS ENFRENTADOS · OCHO CONOS FIJOS', laneField() + measures + footballer(lane.centers[0], face(0), 'A') + footballer(lane.centers[1], face(1), 'B') + ball(lane.fronts[0]), 'Parate delante del cono central, los laterales quedan hacia delante y a los costados');
     }
-    function passing(t, options = {}) {
-        const duration = options.wall ? 5.6 : 3.8;
-        const feet = options.color ? ['I', 'D', 'I', 'I', 'D', 'D'] : ['I', 'I', 'D', 'D'];
-        const u = t % (duration * feet.length), turn = Math.min(feet.length - 1, Math.max(0, Math.floor(u / duration))), local = u - turn * duration;
-        const owner = turn % 2, foot = feet[turn], recipient = 1 - owner;
-        const target = owner ? [702, foot === 'I' ? 350 : 270] : [550, foot === 'I' ? 270 : 350];
-        const controlStart = options.wall ? 2 : 0, controlEnd = controlStart + (options.wall ? 1.6 : 2), passEnd = controlEnd + (options.wall ? 1.4 : 1.8);
-        const positions = lane.centers.map(p => [...p]);
+    function rearPose(owner, foot, origin, progress, touch = false) {
+        const side = foot === 'I' ? 1 : -1;
+        const rows = [[0, origin], [.12, local(owner, [15, 105 * side])], [.3, local(owner, [-145, 105 * side])], [.46, local(owner, [-230, 0])], [.56, local(owner, [-230, 0])], [.72, local(owner, [-145, -105 * side])], [.9, local(owner, [30, -30 * side])], [1, lane.centers[owner]]];
+        const pose = pathPose(rows, clamp(progress), face(owner));
+        if (touch && progress >= .46 && progress <= .56) pose.hand = lane.rears[owner];
+        return pose;
+    }
+    function actors(positions, angles, location, active = -1, foot = '', hand = null) {
+        return footballer(positions[0], angles[0], 'A', active === 0 ? foot : '', active === 0 ? hand : null) + footballer(positions[1], angles[1], 'B', active === 1 ? foot : '', active === 1 ? hand : null) + ball(location);
+    }
+    function notes(text) { return `<text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="16">${Palometas.escapeHTML(text)}</text>`; }
+    function basicPassing(t, rear = false) {
+        const duration = rear ? 5.4 : 3.8, turn = Math.min(3, Math.floor((t % (duration * 4)) / duration)), u = (t % (duration * 4)) - turn * duration;
+        const owner = turn % 2, recipient = 1 - owner, foot = footAt(turn), end = target(owner, foot), controlEnd = rear ? 1.6 : 2, passEnd = controlEnd + 1.8;
+        const positions = copyCenters(), angles = [face(0), face(1)], last = controlBody(owner, end, foot);
         let location, phase;
-        const who = owner ? 'B' : 'A', partner = recipient ? 'B' : 'A';
-        if (options.wall && local < controlStart) {
-            location = local < 1 ? track([[0, lane.fronts[owner]], [1, lane.fronts[recipient]]], local) : track([[1, lane.fronts[recipient]], [2, lane.fronts[owner]]], local);
-            phase = local < 1 ? `${who} inicia la pared con ${partner}` : `${partner} devuelve de cara, ${who} prepara el control orientado`;
-        } else if (local < controlEnd) {
-            location = track([[controlStart, lane.fronts[owner]], [controlEnd, target]], local);
-            positions[owner] = [location[0] + (owner ? 25 : -25), location[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
-            phase = `${who}, controlá hacia delante con la ${foot === 'I' ? 'izquierda' : 'derecha'}`;
-            if (options.color) phase = `${foot === 'I' ? 'AZUL' : 'ROSA'}, ${who} controla con la ${foot === 'I' ? 'izquierda' : 'derecha'}`;
+        if (u < controlEnd) {
+            location = track([[0, lane.fronts[owner]], [controlEnd, end]], u);
+            positions[owner] = controlBody(owner, location, foot);
+            phase = `${owner ? 'B' : 'A'} orienta el primer toque, pasa antes de superar el cono lateral`;
         } else {
-            location = track([[controlEnd, target], [passEnd, lane.fronts[recipient]]], local);
-            const last = [target[0] + (owner ? 25 : -25), target[1] + (foot === 'I' ? (owner ? -8 : 8) : (owner ? 8 : -8))];
-            positions[owner] = track([[controlEnd, last], [passEnd, lane.centers[owner]]], local);
-            phase = `${who} devuelve y vuelve al centro, ahora recibe ${partner}`;
-            if (options.color) phase = `Indicá ${feet[(turn + 1) % feet.length] === 'I' ? 'AZUL' : 'ROSA'} antes de que reciba ${partner}`;
-        }
-        let body = laneField();
-        body += `<path d="M${point(lane.fronts[owner])} L${point(target)}" fill="none" stroke="#9ee8bb" stroke-width="3"/><path d="M${point(target)} L${point(lane.fronts[recipient])}" fill="none" stroke="#fff5e5" stroke-width="2" stroke-dasharray="9 8"/>`;
-        body += footballer(positions[0], 90, 'A', owner === 0 && local >= controlStart && local < controlEnd ? foot : '') + footballer(positions[1], 270, 'B', owner === 1 && local >= controlStart && local < controlEnd ? foot : '') + ball(location);
-        body += '<text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="16">Azul, izquierda · Rosa, derecha · Mismos cinco conos en todas las variantes</text>';
-        return { body, phase };
-    }
-    function running(t, options = {}) {
-        const { meeting, support, parked, supportFoot } = lane;
-        const runnerKeys = [[0, support], [.7, [600, 205]], [2.7, [195, 205]], [3.3, [108, 270]], [3.8, [108, 350]], [4.4, [195, 390]], [5.6, [450, 385]], [6, meeting], [8, meeting]];
-        const swapKeys = [[0, meeting], [.6, [480, 410]], [1.3, [630, 410]], [1.8, [630, 310]], [2, support], [8, support]];
-        const facing = (keys, time, fallback) => {
-            const a = track(keys, time, false), b = track(keys, time + .02, false);
-            return Math.hypot(b[0] - a[0], b[1] - a[1]) < .01 ? fallback : Math.atan2(b[0] - a[0], a[1] - b[1]) * 180 / Math.PI;
-        };
-        let positions, angles, location, phase;
-        if (t < 5) {
-            positions = [track([[0, [165, 310]], [3, meeting], [5, meeting]], t), support]; angles = [90, 270];
-            location = t < 3 ? parked : t < 4 ? track([[3, parked], [4, supportFoot]], t) : track([[4, supportFoot], [5, parked]], t);
-            phase = t < 3 ? 'A corre desde el cono a la pelota' : t < 4 ? 'A frena y da un pase corto a B' : 'B devuelve corto y se prepara para correr al cono';
-        } else {
-            const cycle = (t - 5) % 16, half = Math.floor(cycle / 8), u = cycle % 8;
-            const runner = half === 0 ? 1 : 0, other = 1 - runner;
-            positions = []; angles = [];
-            positions[runner] = track(runnerKeys, u, false); angles[runner] = facing(runnerKeys, u, 90);
-            const target = [550, other === 0 ? 270 : 350];
-            if (options.control && u < 2.4) {
-                location = track([[0, parked], [1.2, target], [2.4, parked]], u);
-                positions[other] = [location[0] - 25, location[1]]; angles[other] = 90;
+            location = track([[controlEnd, end], [passEnd, lane.fronts[recipient]]], u);
+            if (rear) {
+                const pose = rearPose(owner, foot, last, (u - controlEnd) / (duration - controlEnd)); positions[owner] = pose.p; angles[owner] = pose.angle;
+                phase = `${owner ? 'B' : 'A'} pasa y va al cono de atrás, ${recipient ? 'B' : 'A'} espera su regreso`;
             } else {
-                const shift = options.control ? Math.max(0, u - 2.4) * 1.25 : u;
-                positions[other] = track(swapKeys, shift, false); angles[other] = facing(swapKeys, shift, 270);
-                location = u < 6 ? parked : u < 7 ? track([[6, parked], [7, supportFoot]], u) : track([[7, supportFoot], [8, parked]], u);
+                positions[owner] = track([[controlEnd, last], [passEnd, lane.centers[owner]]], u);
+                phase = `${owner ? 'B' : 'A'} devuelve y vuelve al centro, ahora recibe ${recipient ? 'B' : 'A'}`;
             }
-            const who = runner ? 'B' : 'A', partner = other ? 'B' : 'A';
-            phase = options.control && u < 1.2 ? `${partner} controla al ${other === 0 ? 'AZUL' : 'ROSA'}, ${who} sale al cono` : options.control && u < 2.4 ? `${partner} deja la pelota otra vez en el punto de pase` : u < 2.5 ? `${who} va al cono, ${partner} ocupa el apoyo de enfrente` : u < 4.4 ? `${who} rodea el cono y vuelve, la pelota queda preparada` : u < 6 ? `${who} vuelve a la pelota y se prepara para el pase corto` : u < 7 ? `${who} pasa corto a ${partner}` : `${partner} devuelve corto, ahora le toca correr al cono`;
         }
-        let body = laneField();
-        body += '<path d="M608,310 L600,205 H195 Q90,205 108,310 Q90,390 195,390 L450,385 500,310" fill="none" stroke="#9acbab" stroke-width="2" stroke-dasharray="9 8"/><path d="M525,310 H583" fill="none" stroke="#fff8e9" stroke-width="3" stroke-dasharray="8 7"/><circle cx="525" cy="310" r="17" fill="none" stroke="#ffe059" stroke-opacity=".55"/><text x="450" y="500" text-anchor="middle" fill="#bed5c3" font-size="16">B se acerca para la pared de 2–3 m · El cono de giro queda a 10–12 m</text>';
-        body += footballer(positions[0], angles[0], 'A') + footballer(positions[1], angles[1], 'B') + ball(location);
+        let body = laneField() + `<path d="M${point(lane.fronts[owner])} L${point(end)}" fill="none" stroke="#9ee8bb" stroke-width="2"/><path d="M${point(end)} L${point(lane.fronts[recipient])}" fill="none" stroke="#fff5e5" stroke-width="2" stroke-dasharray="7 6"/>`;
+        body += actors(positions, angles, location, owner, u < controlEnd ? foot : '') + notes(rear ? 'Después de pasar, rodeá tu cono trasero y volvé para recibir por el otro perfil' : 'Primer toque hacia delante y al costado, devolución antes del cono, vuelta al centro');
         return { body, phase };
     }
-    function frame(view, body, phase, progress = '', mobility = false) {
+    function curveState(owner, foot, t) {
+        const side = foot === 'I' ? 1 : -1, u = clamp(t / 3.6);
+        const rows = [[0, lane.centers[owner]], [.2, local(owner, [20, 85 * side])], [.4, local(owner, [55, 115 * side])], [.58, local(owner, [95, 95 * side])], [.72, local(owner, [100, 55 * side])], [.8, local(owner, [70, 25 * side])], [.86, local(owner, [35, 20 * side])], [1, local(owner, [35, 20 * side])]];
+        let pose;
+        if (u < .86) pose = pathPose(rows, u, face(owner));
+        else {
+            const startAngle = heading(local(owner, [70, 25 * side]), local(owner, [35, 20 * side]), face(owner));
+            const delta = ((face(owner) - startAngle + 540) % 360) - 180;
+            pose = { p: rows[rows.length - 1][1], angle: startAngle + delta * ease((u - .86) / .14) };
+        }
+        const location = u === 0 ? lane.fronts[owner] : ahead(pose.p, pose.angle);
+        return { ...pose, location };
+    }
+    function figureEight(t) {
+        const duration = 7.4, turn = Math.min(3, Math.floor((t % (duration * 4)) / duration)), u = (t % (duration * 4)) - turn * duration;
+        const owner = turn % 2, recipient = 1 - owner, foot = footAt(turn), positions = copyCenters(), angles = [face(0), face(1)];
+        const end = curveState(owner, foot, 3.6); let location, phase;
+        if (u < 3.6) {
+            const pose = curveState(owner, foot, u); positions[owner] = pose.p; angles[owner] = pose.angle; location = pose.location;
+            phase = `${owner ? 'B' : 'A'} conduce por fuera del cono, dibujando la curva del ocho`;
+        } else {
+            location = track([[3.6, end.location], [4.8, lane.fronts[recipient]]], u);
+            const pose = rearPose(owner, foot, end.p, (u - 3.6) / 3.8); positions[owner] = pose.p; angles[owner] = pose.angle;
+            phase = `${owner ? 'B' : 'A'} descarga y vuelve por atrás, en su próxima recepción cambia el perfil`;
+        }
+        const body = laneField() + actors(positions, angles, location, owner, u < 3.6 ? foot : '') + notes('Rodeá el cono por fuera con pelota, alterná el lado en la siguiente recepción');
+        return { body, phase };
+    }
+    function deepPassing(t) {
+        const duration = 3.8, turn = Math.min(3, Math.floor((t % (duration * 4)) / duration)), u = (t % (duration * 4)) - turn * duration;
+        const owner = turn % 2, recipient = 1 - owner, foot = footAt(turn), end = target(owner, foot, true), last = controlBody(owner, end, foot);
+        const positions = copyCenters(), angles = [face(0), face(1)]; let location, phase;
+        if (u < 1.2) {
+            location = track([[0, lane.fronts[owner]], [1.2, end]], u); positions[owner] = controlBody(owner, location, foot);
+            phase = `${owner ? 'B' : 'A'} orienta hacia delante y atraviesa la línea de sus conos`;
+        } else {
+            location = track([[1.2, end], [2.4, lane.fronts[recipient]]], u);
+            const side = foot === 'I' ? 1 : -1;
+            positions[owner] = track([[1.2, last], [2.7, local(owner, [30, -25 * side])], [3.8, lane.centers[owner]]], u);
+            phase = `${owner ? 'B' : 'A'} devuelve con el toque siguiente y reinicia con una diagonal hacia atrás`;
+        }
+        const body = laneField() + `<path d="M420,218 V402 M480,218 V402" fill="none" stroke="#daeacf" stroke-width="1" stroke-dasharray="6 6"/>` + actors(positions, angles, location, owner, u < 1.2 ? foot : '') + notes('Dos contactos, control orientado y pase con el toque siguiente, sin acomodar otra vez');
+        return { body, phase };
+    }
+    function fakeAndTouch(t) {
+        const duration = 6.2, turn = Math.min(3, Math.floor((t % (duration * 4)) / duration)), u = (t % (duration * 4)) - turn * duration;
+        const owner = turn % 2, recipient = 1 - owner, foot = turn < 2 ? 'D' : 'I', side = foot === 'I' ? 1 : -1;
+        const nextTurn = (turn + 1) % 4, nextFoot = nextTurn < 2 ? 'D' : 'I', nextSide = nextFoot === 'I' ? 1 : -1;
+        const receive = local(owner, [50, 20 * side]), end = target(owner, foot), last = controlBody(owner, end, foot);
+        const nextReceive = local(recipient, [50, 20 * nextSide]);
+        const positions = copyCenters(), angles = [face(0), face(1)]; let location, hand = null, phase;
+        positions[recipient] = track([[0, lane.centers[recipient]], [.7, lane.centers[recipient]], [1.2, local(recipient, [30, -18 * nextSide])], [2.4, controlBody(recipient, nextReceive, nextFoot)]], u);
+        if (u >= .7 && u < 1.2) angles[recipient] = face(recipient) - nextSide * 15;
+        if (u < 1.2) {
+            location = track([[0, receive], [1.2, end]], u); positions[owner] = controlBody(owner, location, foot);
+            phase = `${owner ? 'B' : 'A'} controla con suela o exterior, ${recipient ? 'B' : 'A'} prepara la finta`;
+        } else {
+            location = track([[1.2, end], [2.4, nextReceive]], u);
+            const pose = rearPose(owner, foot, last, (u - 1.2) / 5, true); positions[owner] = pose.p; angles[owner] = pose.angle; hand = pose.hand;
+            phase = u < 2.4 ? `${recipient ? 'B' : 'A'} sale al lado contrario para recibir el pase` : hand ? `${owner ? 'B' : 'A'} toca el cono trasero con la mano y vuelve` : `${owner ? 'B' : 'A'} vuelve al centro, su compañera espera para devolver`;
+        }
+        const body = laneField() + actors(positions, angles, location, owner, u < 1.2 ? foot : '', hand) + notes('Finta antes de recibir, control al otro lado y toque con la mano al cono trasero');
+        return { body, phase };
+    }
+    function rotatePositions(t) {
+        const duration = 8.3, turn = Math.min(3, Math.floor((t % (duration * 4)) / duration)), u = (t % (duration * 4)) - turn * duration;
+        const leftPerson = turn % 2, rightPerson = 1 - leftPerson, foot = footAt(turn);
+        const positions = [], angles = []; positions[leftPerson] = lane.centers[0]; positions[rightPerson] = lane.centers[1]; angles[leftPerson] = face(0); angles[rightPerson] = face(1);
+        const end = target(1, foot), last = controlBody(1, end, foot); let location, phase;
+        if (u < 1) { location = track([[0, lane.fronts[0]], [1, lane.fronts[1]]], u); phase = `${leftPerson ? 'B' : 'A'} inicia el pase al centro de su compañera`; }
+        else if (u < 2.6) {
+            location = track([[1, lane.fronts[1]], [2.6, end]], u); positions[rightPerson] = controlBody(1, location, foot);
+            phase = `${rightPerson ? 'B' : 'A'} orienta hacia el lateral y prepara la devolución`;
+        } else if (u < 3.8) {
+            location = track([[2.6, end], [3.8, lane.fronts[0]]], u); positions[rightPerson] = track([[2.6, last], [3.8, lane.centers[1]]], u);
+            phase = `${rightPerson ? 'B' : 'A'} devuelve, ahora las dos van a cambiar de puesto`;
+        } else if (u < 4.3) { location = lane.fronts[0]; phase = `${leftPerson ? 'B' : 'A'} frena la pelota y avisa, te la dejo`; }
+        else {
+            const progress = (u - 4.3) / 4;
+            const top = [[0, lane.centers[0]], [.15, [390, 280]], [.35, [335, 205]], [.5, [450, 185]], [.7, [565, 205]], [.9, [510, 280]], [1, lane.centers[1]]];
+            const bottom = [[0, lane.centers[1]], [.15, [510, 340]], [.35, [565, 415]], [.5, [450, 435]], [.7, [335, 415]], [.9, [390, 340]], [1, lane.centers[0]]];
+            const a = pathPose(top, progress, face(1)), b = pathPose(bottom, progress, face(0));
+            positions[leftPerson] = a.p; angles[leftPerson] = a.angle; positions[rightPerson] = b.p; angles[rightPerson] = b.angle;
+            location = lane.fronts[0]; phase = 'Voy, cada una usa un costado y ocupa el centro que dejó su compañera';
+        }
+        const body = laneField() + '<path d="M380,310 Q335,185 450,185 Q565,185 520,310 M520,310 Q565,435 450,435 Q335,435 380,310" fill="none" stroke="#a8d2b1" stroke-width="2" stroke-dasharray="7 7"/>' + actors(positions, angles, location) + notes('Una por cada costado, pelota frenada y comunicación, voy, te la dejo');
+        return { body, phase };
+    }
+    const finishingSpots = [
+        { name: 'Centro', pole: [450, 325], queue: [450, 416], wait: [760, 416] },
+        { name: 'Extremo izquierdo', pole: [210, 325], queue: [145, 416], wait: [110, 416] },
+        { name: 'Extremo derecho', pole: [690, 325], queue: [755, 416], wait: [790, 416] }
+    ];
+    const queuePoint = (spot, index) => [spot.queue[0], spot.queue[1] + 24 * index];
+    const waitingPoint = (spot, index) => [spot.wait[0], spot.wait[1] + 24 * index];
+    function finishingField(active) {
+        let body = '<rect x="95" y="145" width="710" height="345" rx="4" fill="#1c5541" stroke="#bcdac5" stroke-width="2"/><path d="M210,145 V325 H690 V145 M340,145 V208 H560 V145" fill="none" stroke="#c9dfcd" stroke-width="2"/><circle cx="450" cy="265" r="3" fill="#d9e9dc"/><rect x="394" y="124" width="112" height="21" fill="#102c27" stroke="#f6f1e6" stroke-width="3"/><path d="M406,125 V144 M422,125 V144 M438,125 V144 M454,125 V144 M470,125 V144 M486,125 V144 M395,135 H505" stroke="#d2e1d3" stroke-width="1"/>';
+        finishingSpots.forEach((spot, index) => {
+            const [x, y] = spot.pole;
+            body += `<circle cx="${x}" cy="${y}" r="20" fill="${index === active ? '#ffe05925' : '#ffffff08'}"/><path d="M${x},${y - 14} V${y + 14}" stroke="#ffbd61" stroke-width="8" stroke-linecap="round"/><text x="${x}" y="${y + 38}" text-anchor="middle" fill="${index === active ? '#ffe059' : '#c9dfcd'}" font-size="15">${index + 1} · ${Palometas.escapeHTML(spot.name)}</text>`;
+        });
+        return body;
+    }
+    function finishing(t) {
+        const stageDuration = 24, elapsed = t % (stageDuration * 3), station = Math.min(2, Math.floor(elapsed / stageDuration)), stageTime = elapsed - station * stageDuration;
+        const spot = finishingSpots[station], next = finishingSpots[(station + 1) % 3];
+        const movingGroup = stageTime >= 21, active = Math.min(2, Math.floor(stageTime / 7)), u = stageTime - active * 7;
+        const foot = active === 1 ? 'I' : 'D', kick = [spot.pole[0] + (foot === 'D' ? 32 : -32), spot.pole[1] - 24];
+        const goalTarget = [450 + (foot === 'D' ? -30 : 30), 157], angle = heading(kick, goalTarget, 0), rad = angle * Math.PI / 180;
+        const kickBody = [kick[0] - 20 * Math.sin(rad) - (foot === 'D' ? 1 : -1) * 6.4 * Math.cos(rad), kick[1] + 20 * Math.cos(rad) - (foot === 'D' ? 1 : -1) * 6.4 * Math.sin(rad)];
+        const start = queuePoint(spot, 0), wait = waitingPoint(spot, active), pickup = [goalTarget[0], goalTarget[1] + 22];
+        const activeRoute = [[0, start], [1.8, kickBody], [3.2, kickBody], [4.3, pickup], [5.4, [wait[0], 230]], [6.7, wait], [7, wait]];
+        let body = finishingField(station), phase, keeper = [450, 176];
+        if (movingGroup) {
+            const progress = ease((stageTime - 21) / 3);
+            for (let i = 0; i < 3; i++) {
+                const from = waitingPoint(spot, i), to = queuePoint(next, i), p = [mix(from[0], to[0], progress), mix(from[1], to[1], progress)];
+                body += footballer(p, heading(from, to, 0), String(i + 1)) + ball([mix(from[0] + 18, to[0], progress), mix(from[1], to[1] - 20, progress)]);
+            }
+            phase = `Todas terminaron, llevá el grupo junto al puesto ${station === 2 ? 1 : station + 2}`;
+        } else {
+            for (let i = 0; i < 3; i++) {
+                let p, location, facing = 0;
+                if (i < active) { p = waitingPoint(spot, i); location = [p[0] + 18, p[1]]; }
+                else if (i > active) {
+                    const from = queuePoint(spot, i - active), to = queuePoint(spot, i - active - 1), advance = ease(u / 1.8);
+                    p = [mix(from[0], to[0], advance), mix(from[1], to[1], advance)]; location = [p[0], p[1] - 20];
+                } else {
+                    p = track(activeRoute, u, false);
+                    facing = u < 1.8 ? angle * ease(u / 1.8) : u < 3.2 ? angle : u < 6.7 ? pathPose(activeRoute, u, 0).angle : 0;
+                    if (u < 2.3) location = track([[0, [start[0], start[1] - 20]], [1.8, kick], [2.3, kick]], u);
+                    else if (u < 4.3) location = track([[2.3, kick], [2.9, goalTarget], [4.3, goalTarget]], u);
+                    else { const lift = ease((u - 4.3) / .4); location = [mix(goalTarget[0], p[0] + 18, lift), mix(goalTarget[1], p[1], lift)]; }
+                }
+                body += footballer(p, facing, String(i + 1), i === active && u < 2.3 ? foot : '') + ball(location);
+            }
+            const react = u < 3 ? ease((u - 2.3) / .7) : 1 - ease((u - 4.8) / 1.4);
+            keeper = [mix(450, goalTarget[0], react), 176];
+            phase = u < 1.8 ? `${active + 1} conduce hasta el palo y prepara su pie ${foot === 'I' ? 'izquierdo' : 'derecho'}` : u < 2.3 ? 'Último toque al costado del palo, pie de apoyo y mirada al arco' : u < 3.2 ? `${active + 1} remata, las demás esperan con su pelota` : u < 4.3 ? 'La jugadora busca la pelota, la siguiente espera que quede libre' : 'Pelota recuperada, espera por fuera y queda listo el siguiente turno';
+        }
+        body += footballer(keeper, 180, 'ARQ') + notes('Un puesto por vez, cada una con su pelota, cambiá cuando todas hayan rematado');
+        return { body, phase, view: `15 · DEFINICIÓN · PUESTO ${station + 1} DE 3 · ${spot.name.toUpperCase()}` };
+    }
+    function frame(view, body, phase, progress = '', mobility = false, category = '') {
         const e = Palometas.escapeHTML;
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" role="img" aria-label="${e(view + '. ' + phase)}" font-family="Arial,sans-serif"><rect width="900" height="580" rx="18" fill="#102c27"/><text x="32" y="37" fill="#99cbb6" font-size="14" letter-spacing="3">PALOMETAS · ${mobility ? 'MOVILIDAD' : 'CIRCUITO DE PASES'}</text><text x="32" y="76" fill="#c8d9b8" font-size="18" letter-spacing="1">${e(view)}</text>${progress}${body}<rect x="22" y="519" width="856" height="43" rx="8" fill="#1c3d30"/><text x="450" y="546" text-anchor="middle" fill="#eff3e4" font-size="16">${e(phase)}</text></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" role="img" aria-label="${e(view + '. ' + phase)}" font-family="Arial,sans-serif"><rect width="900" height="580" rx="18" fill="#102c27"/><text x="32" y="37" fill="#99cbb6" font-size="14" letter-spacing="3">PALOMETAS · ${category || (mobility ? 'MOVILIDAD' : 'CIRCUITO DE PASES')}</text><text x="32" y="76" fill="#c8d9b8" font-size="18" letter-spacing="1">${e(view)}</text>${progress}${body}<rect x="22" y="519" width="856" height="43" rx="8" fill="#1c3d30"/><text x="450" y="546" text-anchor="middle" fill="#eff3e4" font-size="16">${e(phase)}</text></svg>`;
     }
     function render(id, t = 0, sequence = []) {
         t = Number.isFinite(t) ? Math.max(0, t) : 0;
-        const mobility = id === 'movilidad';
+        const mobility = id === 'movilidad', isFinishing = id === 'definicion-tres-palos';
         sequence = Array.isArray(sequence) ? sequence.filter(part => Number.isFinite(part.seconds) && part.seconds > 0) : [];
         let body, phase, view, sequenceTitle = '', progress = '';
         if (id === 'movilidad' && sequence.length) {
@@ -201,15 +326,19 @@ window.WarmupMotions = (() => {
             sequenceTitle = `MOVILIDAD · ${index + 1} DE ${sequence.length} · ${part.name.toUpperCase()}`;
             progress = `<rect x="32" y="105" width="836" height="4" rx="2" fill="#ffffff20"/><rect x="32" y="105" width="${836 * clamp(elapsed / total)}" height="4" rx="2" fill="#a7d6af"/>`;
         }
-        if (id === 'progresion') { ({ body, phase } = running(t)); view = 'CARRERA, PARED CORTA Y CAMBIO · VISTA DESDE ARRIBA'; }
-        else if (id === 'pases' || id === 'color' || id === 'pared') { ({ body, phase } = passing(t, { color: id === 'color', wall: id === 'pared' })); view = id === 'color' ? 'CONTROL AL COLOR · VISTA DESDE ARRIBA' : id === 'pared' ? 'PARED Y CONTROL · VISTA DESDE ARRIBA' : 'CONTROL Y PASE · VISTA DESDE ARRIBA'; }
-        else if (id === 'carrera-color') { ({ body, phase } = running(t, { control: true })); view = 'CARRERA, PARED Y CONTROL AL COLOR'; }
+        if (id === 'pases') { ({ body, phase } = basicPassing(t)); view = '9 · CONTROL Y PASE ANTES DEL CONO'; }
+        else if (id === 'progresion') { ({ body, phase } = basicPassing(t, true)); view = '10 · PASE Y VUELTA AL CONO TRASERO'; }
+        else if (id === 'ocho') { ({ body, phase } = figureEight(t)); view = '11 · OCHO DE CONTROL Y DESCARGA'; }
+        else if (id === 'profundidad') { ({ body, phase } = deepPassing(t)); view = '12 · CONTROL PROFUNDO Y DEVOLUCIÓN RÁPIDA'; }
+        else if (id === 'amague') { ({ body, phase } = fakeAndTouch(t)); view = '13 · AMAGUE, CONTROL Y APOYO TRASERO'; }
+        else if (id === 'rotacion') { ({ body, phase } = rotatePositions(t)); view = '14 · INTERCAMBIO DE PUESTOS'; }
+        else if (isFinishing) ({ body, phase, view } = finishing(t));
         else {
             const info = ['tobillo', 'sentadilla', 'zancada', 'talones'].includes(id) ? sidePose(id, t) : frontPose(id, t);
             body = `<ellipse cx="470" cy="469" rx="144" ry="12" fill="#0c241d"/><path d="M290 473 H670" stroke="#9dc2a9" stroke-width="2"/>${athlete(info.p, info.side)}`;
             phase = info.phase; view = info.side ? 'VISTA LATERAL' : 'VISTA DE FRENTE';
         }
-        return frame(sequenceTitle || view, body, phase, progress, mobility);
+        return frame(sequenceTitle || view, body, phase, progress, mobility, isFinishing ? 'DEFINICIÓN' : '');
     }
     return { render, setup };
 })();

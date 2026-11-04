@@ -16,6 +16,7 @@ window.TrainingBoards = (() => {
         if (type === 'stations') return d.groups.map((count, i) => `${'ABC'[i]}: ${count}`).join(' · ') + ' jugadoras';
         if (type === 'warmup') return `${n} jugadoras de campo · arquera en trabajo específico`;
         if (type === 'circuit') return `${n} jugadoras de campo · mismas parejas y mismos conos`;
+        if (type === 'finishing') return `${n} jugadoras en una fila · tres puestos sucesivos + arquera`;
         if (type === 'cooldown') return `${n} de campo + arquera · cierre en conjunto`;
         let text = `${d.red} contra ${d.blue}`;
         if (d.neutral) text += ` + ${d.neutral} ${type === 'attack' ? 'apoyos de banda' : d.neutral === 1 ? 'comodín' : 'comodines'}`;
