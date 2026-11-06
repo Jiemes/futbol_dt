@@ -1,0 +1,84 @@
+.sidebar .nav-links { min-height: 0; overflow-y: auto; }
+.board-controls { --board-border: #ffffff1f; --board-panel: #191b1e; --board-focus: #ed9db0; }
+.board-saved, .board-document, .board-tools, .board-selection, .board-steps, .board-bottom {
+    background: var(--board-panel);
+    border: 1px solid var(--board-border);
+    border-radius: 12px;
+}
+.board-saved { margin-bottom: 12px; padding: 0 14px; }
+.board-saved summary { display: flex; align-items: center; gap: 10px; }
+.board-saved summary::before { content: '▸'; color: var(--board-focus); }
+.board-saved[open] summary::before { content: '▾'; }
+.board-saved summary span { color: var(--text-muted); font-size: .83rem; }
+.board-saved-toolbar, .board-saved-card, .board-document, .board-field-toolbar, .board-steps-top, .board-bottom, .board-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.board-saved-toolbar { margin-bottom: 10px; }
+.board-saved-toolbar input { flex: 1 1 170px; }
+.board-saved-list { max-height: 285px; overflow: auto; padding: 0 3px 12px; }
+.board-saved-card { justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--board-border); }
+.board-saved-card > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.board-saved-card small { color: var(--text-muted); margin-left: 8px; }
+.board-saved-card p { color: var(--text-muted); font-size: .88rem; }
+.board-document { padding: 12px; justify-content: space-between; align-items: flex-end; }
+.board-document-fields { display: flex; flex: 1 1 360px; flex-wrap: wrap; gap: 8px; }
+.board-document-fields > div:first-child { flex: 1 1 155px; }
+.board-document label, .board-bottom label, .board-selection label { display: block; font-size: .86rem; margin-bottom: 5px; }
+.board-document input, .board-bottom textarea, .board-tools input, .board-selection input, .board-selection select { width: 100%; }
+.board-document-state { color: var(--text-muted); font-size: .82rem; margin: 8px 0 12px; }
+.board-editor-grid { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 12px; align-items: start; }
+.board-tools, .board-selection, .board-steps, .board-bottom { padding: 12px; }
+.board-tools h2 { font-size: .95rem; margin-bottom: 8px; }
+.board-tools h2:not(:first-child) { margin-top: 15px; }
+.board-preset { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.board-tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.board-tool, .board-step, .board-roster button {
+    border: 1px solid var(--board-border);
+    border-radius: 8px;
+    color: var(--text-color);
+    background: #272a2d;
+    cursor: pointer;
+}
+.board-tool { display: grid; place-items: center; min-height: 47px; gap: 3px; padding: 6px; font-size: .76rem; }
+.board-tool i { color: var(--board-swatch, #f4be87); font-size: 1rem; }
+.board-tool span { overflow-wrap: anywhere; }
+.board-tool[aria-pressed=true], .board-step[aria-pressed=true], .board-roster button[aria-pressed=true] { border-color: var(--board-focus); background: #4a2334; }
+.board-tool:hover, .board-step:hover, .board-roster button:hover { filter: brightness(1.2); }
+.board-roster { display: grid; gap: 5px; max-height: 350px; overflow: auto; margin-top: 8px; padding-right: 3px; }
+.board-roster button { display: flex; align-items: center; justify-content: space-between; min-height: 39px; gap: 4px; padding: 7px; text-align: left; font-size: .87rem; overflow-wrap: anywhere; }
+.board-roster button small { flex: 0 0 auto; color: #b1d8be; font-size: .64rem; }
+.board-roster button.is-placed { background: #203a31; }
+.board-roster p, .board-steps p, .board-tool-hint { color: var(--text-muted); font-size: .84rem; }
+.board-field-toolbar .board-tool { display: flex; align-items: center; min-height: 38px; gap: 6px; padding: 6px 10px; font-size: .88rem; }
+.board-field-toolbar select { width: auto; max-width: 100%; }
+.board-tool-hint { min-height: 24px; margin: 7px 0; }
+.board-surface { display: block; width: 100%; aspect-ratio: 900 / 650; border-radius: 12px; background: #133c31; touch-action: none; user-select: none; cursor: crosshair; }
+.board-surface[data-tool=move] { cursor: default; }
+.board-surface[data-tool=move] [data-piece] { cursor: grab; }
+.board-surface[data-tool=move] [data-piece]:active { cursor: grabbing; }
+.board-selection, .board-steps { margin-top: 10px; }
+.board-selection-actions { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.board-selection-actions label { margin: 0; max-width: 170px; }
+.board-step-list { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.board-step { padding: 6px 10px; font-size: .85rem; }
+.board-bottom { margin-top: 12px; align-items: flex-end; justify-content: space-between; }
+.board-bottom > div:first-child { flex: 1 1 300px; }
+.board-status { position: fixed; right: 16px; bottom: 16px; z-index: 20; width: min(430px, calc(100vw - 32px)); padding: 12px 16px; border: 1px solid #4c8367; border-radius: 10px; background: #1d3d31; color: #f4fff4; box-shadow: 0 8px 30px #0007; pointer-events: none; }
+.board-status[data-error=true] { border-color: #a45969; background: #522735; color: #ffe5e9; }
+#board-print-page { display: none; }
+
+@media (max-width: 1080px) {
+    .board-editor-grid { grid-template-columns: minmax(0, 1fr); }
+    .board-tool-grid { grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); }
+    .board-roster { grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); max-height: 140px; }
+}
+@media print {
+    body.printing-board { display: block; height: auto; overflow: visible; color: #152c23; background: white; }
+    body.printing-board > :not(#board-print-page) { display: none !important; }
+    body.printing-board #board-print-page { display: block; margin: 0; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    #board-print-page svg { display: block; width: 100%; height: auto; max-height: 220mm; break-inside: avoid; }
+    #board-print-page p { white-space: pre-wrap; margin: 10px 15px; overflow-wrap: anywhere; }
+}

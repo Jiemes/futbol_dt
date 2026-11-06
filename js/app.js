@@ -2,19 +2,19 @@ const app = {
     showAllBirthdays: false,
     init() {
         document.querySelectorAll('[data-screen]').forEach(item => {
-            item.addEventListener('click', () => item.dataset.screen === 'trainings' ? trainingsManager.showCatalog() : this.showScreen(item.dataset.screen));
+            item.addEventListener('click', () => item.dataset.screen === 'trainings' ? trainingsManager.showCatalog() : this.showScreen(item.dataset.screen, item.hasAttribute('data-board-archive')));
             item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); } });
         });
         document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.close).close()));
         document.getElementById('birthday-toggle').addEventListener('click', () => { this.showAllBirthdays = !this.showAllBirthdays; this.updateDashboard(); });
-        playersManager.init(); matchesManager.init(); libraryManager.init(); trainingsManager.init();
+        playersManager.init(); matchesManager.init(); libraryManager.init(); boardsManager.init(); trainingsManager.init();
         this.updateDashboard();
     },
     async refresh() {
         await playersManager.loadPlayers();
         this.updateDashboard();
     },
-    showScreen(screen) {
+    showScreen(screen, openSaved = false) {
         if (!document.getElementById(`screen-${screen}`)) return;
         if (screen !== 'trainings') window.trainingsManager?.stopWarmup();
         if (screen !== 'trainings' && location.hash.startsWith('#entrenamientos')) history.replaceState(null, '', location.pathname + location.search);
@@ -23,6 +23,7 @@ const app = {
         document.getElementById('sidebar').classList.remove('active');
         document.getElementById('sidebar-overlay').classList.remove('active');
         document.querySelector('.content-area').scrollTop = 0;
+        window.boardsManager?.show(screen, openSaved);
     },
     notify(message, error = false) {
         const element = document.getElementById('app-message');
@@ -51,6 +52,7 @@ const app = {
         document.getElementById('birthdays-missing').textContent = missing ? `${missing} jugadora(s) sin fecha de nacimiento válida.` : '';
         if (window.matchesManager) matchesManager.updateHomeMatches();
         window.trainingsManager?.refreshRoster();
+        window.boardsManager?.refreshRoster();
     },
     exportBirthdays(players = playersManager.players) {
         if (!Palometas.birthdays(players).length) { this.notify('No hay cumpleaños válidos para exportar.', true); return; }

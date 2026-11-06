@@ -22,6 +22,7 @@ const libraryManager = {
             if (result.status !== 'fulfilled') { console.error(result.reason); return; }
             result.value.docs.forEach(doc => {
                 const data = doc.data();
+                if (data.format === 'palometas-board-v1') return;
                 if (data.team_category && !Palometas.isSub17({ category: data.team_category })) return;
                 if (!data.title && !data.name && !Palometas.imageURL(data.gif_url)) return;
                 this.exercises.push({ ...data, id: doc.id, collection: collections[index], title: data.name || data.title || 'Jugada sin nombre', phase: data.phase || data.category || 'Jugada' });

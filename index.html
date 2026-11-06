@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Plantel, cumpleaños, entrenamientos, fixture y jugadas de Palometas Sub 17 femenina.">
+  <meta name="description" content="Plantel, entrenamientos, formaciones, ejercicios y fixture de Palometas Sub 17 femenina.">
   <title>Palometas · Sub 17 femenina</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/style.css?v=sub17-2027">
   <link rel="stylesheet" href="css/sub17.css?v=circuito-20261104-4">
   <link rel="stylesheet" href="css/trainings.css?v=circuito-20261104-4">
+  <link rel="stylesheet" href="css/boards.css?v=20261106">
 </head>
 <body class="dark-theme">
   <div id="login-overlay" class="login-overlay active">
@@ -32,6 +33,8 @@
       <li class="active" data-screen="home" tabindex="0"><i class="fas fa-home" aria-hidden="true"></i>Inicio</li>
       <li data-screen="players" tabindex="0"><i class="fas fa-users" aria-hidden="true"></i>Plantel Sub 17</li>
       <li data-screen="trainings" tabindex="0"><i class="fas fa-stopwatch" aria-hidden="true"></i>Entrenamientos</li>
+      <li data-screen="formations" tabindex="0"><i class="fas fa-clipboard-list" aria-hidden="true"></i>Formaciones</li>
+      <li data-screen="exercise-builder" tabindex="0"><i class="fas fa-pen-ruler" aria-hidden="true"></i>Creador de ejercicios</li>
       <li data-screen="matches" tabindex="0"><i class="fas fa-calendar-alt" aria-hidden="true"></i>Fixture</li>
       <li data-screen="library" tabindex="0"><i class="fas fa-play-circle" aria-hidden="true"></i>Jugadas</li>
       <li data-screen="config" id="nav-config" tabindex="0" style="display:none"><i class="fas fa-cog" aria-hidden="true"></i>Accesos</li>
@@ -62,10 +65,18 @@
       <div id="players-grid" class="players-grid" aria-live="polite"></div>
     </section>
     <section id="screen-trainings" class="screen" aria-labelledby="trainings-heading">
-      <header class="screen-header"><div><p class="eyebrow">DE LA IDEA A LA CANCHA</p><h1 id="trainings-heading">Entrenamientos</h1><p>Cada sesión por fecha de carga. Abrila y recorré el trabajo paso a paso.</p></div></header>
+      <header class="screen-header"><div><p class="eyebrow">DE LA IDEA A LA CANCHA</p><h1 id="trainings-heading">Entrenamientos</h1><p>Cada sesión por fecha de carga. Abrila y recorré el trabajo paso a paso.</p></div><button type="button" class="btn btn-secondary" data-screen="exercise-builder" data-board-archive>Ejercicios guardados</button></header>
       <div id="trainings-catalog"></div>
       <div id="training-guide" hidden></div>
       <noscript>Activá JavaScript para recorrer los entrenamientos.</noscript>
+    </section>
+    <section id="screen-formations" class="screen" aria-labelledby="formations-heading">
+      <header class="screen-header"><div><p class="eyebrow">PALOMETAS · SUB 17</p><h1 id="formations-heading">Formaciones</h1><p>Elegí a las chicas del plantel, ubicalas en la cancha y llevate la imagen para compartir o imprimir.</p></div></header>
+      <div id="formation-board"></div>
+    </section>
+    <section id="screen-exercise-builder" class="screen" aria-labelledby="exercise-builder-heading">
+      <header class="screen-header"><div><p class="eyebrow">PIZARRA DE ENTRENAMIENTO</p><h1 id="exercise-builder-heading">Creador de ejercicios</h1><p>Armá la cancha, dibujá pases y recorridos, y guardá la pizarra para volver a usarla o hacer una variante.</p></div></header>
+      <div id="exercise-board"></div>
     </section>
     <section id="screen-matches" class="screen">
       <header class="screen-header"><div><h1>Fixture</h1><p>Cargá los rivales desde que se conoce el sorteo. Fechas, resultados y goleadoras son optativos.</p></div><button class="btn btn-primary" onclick="matchesManager.editMatch()">Agregar partido</button></header>
@@ -73,7 +84,7 @@
       <div id="matches-grid" class="fixture-grid" aria-live="polite"></div>
     </section>
     <section id="screen-library" class="screen">
-      <header class="screen-header"><div><h1>Jugadas</h1><p>Las jugadas y ejercicios que preparamos juntos, listos para ver en cancha.</p></div><button class="btn btn-primary" onclick="libraryManager.editGif()">Agregar GIF</button></header>
+      <header class="screen-header"><div><h1>Jugadas</h1><p>Las jugadas y ejercicios que preparamos juntos, listos para ver en cancha.</p></div><div class="button-row"><button type="button" class="btn btn-secondary" data-screen="exercise-builder" data-board-archive>Ejercicios guardados</button><button class="btn btn-primary" onclick="libraryManager.editGif()">Agregar GIF</button></div></header>
       <label class="search-label" for="library-search">Buscar jugada</label><input id="library-search" class="wide-search" type="search" placeholder="Nombre, momento del juego o consigna">
       <div id="library-grid" class="exercise-grid" aria-live="polite"></div>
     </section>
@@ -82,6 +93,7 @@
       <div class="config-card"><label for="new-user-email">Correo electrónico</label><div class="button-row"><input id="new-user-email" type="email"><button class="btn btn-primary" onclick="auth.addUserAccess()">Agregar acceso</button></div><div id="authorized-users-list"></div></div>
     </section>
   </main>
+  <div id="board-print-page" aria-hidden="true"></div>
   <dialog id="training-media-dialog" class="editor training-media-dialog" aria-labelledby="training-media-title"><div class="section-title"><h2 id="training-media-title">Armado del ejercicio</h2><button type="button" class="btn btn-secondary btn-sm" data-close="training-media-dialog">Cerrar</button></div><p class="text-muted">En el celular podés girar la pantalla o desplazar el esquema para verlo completo.</p><div id="training-enlarged"></div></dialog>
   <dialog id="player-dialog" class="editor" aria-labelledby="player-title">
     <form id="add-player-form"><div class="section-title"><h2 id="player-title">Agregar jugadora</h2><button type="button" class="btn btn-secondary btn-sm" data-close="player-dialog">Cerrar</button></div><input id="p-edit-id" type="hidden">
@@ -170,12 +182,15 @@
   <script src="js/player-photos.js?v=20261104"></script>
   <script src="js/players.js?v=fotos-20261104"></script>
   <script src="js/matches.js?v=sub17-2027"></script>
-  <script src="js/library.js?v=circuito-20261104-4"></script>
+  <script src="js/library.js?v=pizarras-20261106"></script>
   <script src="js/training-data.js?v=circuito-20261104-5"></script>
   <script src="js/training-lineups.js?v=circuito-20261104-5"></script>
   <script src="js/training-boards.js?v=circuito-20261104-5"></script>
   <script src="js/warmup-motions.js?v=circuito-20261104-5"></script>
   <script src="js/trainings.js?v=circuito-20261104-5"></script>
-  <script src="js/app.js?v=entrenamientos-20261104-2"></script>
+  <script src="js/board-diagram.js?v=20261106"></script>
+  <script src="js/board-archive.js?v=20261106"></script>
+  <script src="js/board-editor.js?v=20261106"></script>
+  <script src="js/app.js?v=pizarras-20261106"></script>
 </body>
 </html>
