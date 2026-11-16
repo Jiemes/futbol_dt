@@ -60,7 +60,7 @@
       </div>
     </section>
     <section id="screen-players" class="screen">
-      <header class="screen-header"><div><h1>Plantel Sub 17</h1><p>Los datos que necesitás para acompañar a cada jugadora.</p></div><div class="button-row"><button id="review-categories" class="btn btn-secondary" onclick="playersManager.reviewCategories()" hidden>Revisar otras categorías</button><button class="btn btn-primary" onclick="playersManager.editPlayer()">Agregar jugadora</button></div></header>
+      <header class="screen-header"><div><h1>Plantel Sub 17</h1><p>Los datos que necesitás para acompañar a cada jugadora.</p></div><div class="button-row"><button id="review-categories" class="btn btn-secondary" onclick="playersManager.reviewCategories()" hidden>Revisar otras categorías</button><button id="roster-import-open" type="button" class="btn btn-secondary">Incorporar desde Sub 15</button><button class="btn btn-primary" onclick="playersManager.editPlayer()">Agregar jugadora</button></div></header>
       <label class="search-label" for="player-search">Buscar por nombre o posición</label><input id="player-search" class="wide-search" type="search" placeholder="Buscar en el plantel">
       <div id="players-grid" class="players-grid" aria-live="polite"></div>
     </section>
@@ -136,6 +136,21 @@
     </fieldset>
     <p class="text-muted">La foto se guardará en la ficha cuando pulses Guardar jugadora.</p>
   </dialog>
+  <dialog id="roster-import-dialog" class="editor" aria-labelledby="roster-import-title">
+    <div class="section-title"><h2 id="roster-import-title">Incorporar desde Sub 15</h2><button id="roster-import-close" type="button" class="btn btn-secondary btn-sm" data-close="roster-import-dialog">Cerrar</button></div>
+    <div class="input-group">
+      <label for="roster-import-input">Jugadoras nacidas en 2011</label>
+      <p id="roster-import-help">Pegá un nombre completo y una fecha por fila, separados por |.</p>
+      <textarea id="roster-import-input" aria-describedby="roster-import-help" rows="6" maxlength="5000" spellcheck="false" autocomplete="off" placeholder="Nombre Apellido | AAAA-MM-DD"></textarea>
+    </div>
+    <p id="roster-import-status" role="status" aria-live="polite"></p>
+    <ul id="roster-import-list"></ul>
+    <div class="button-row">
+      <button id="roster-import-review" type="button" class="btn btn-secondary">Revisar lista</button>
+      <button id="roster-import-save" type="button" class="btn btn-primary" hidden>Guardar en Sub 17</button>
+    </div>
+  </dialog>
+
   <dialog id="cleanup-dialog" class="editor" aria-labelledby="cleanup-title">
     <div class="section-title"><h2 id="cleanup-title">Revisar otras categorías</h2><button type="button" class="btn btn-secondary btn-sm" data-close="cleanup-dialog">Cerrar</button></div>
     <p>Incorporá primero a las Sub 15 que pasan al equipo. Elegí qué registros conservar y cuáles borrar. Antes de borrar se descargará una copia de los datos seleccionados.</p>
@@ -191,6 +206,7 @@
   <script src="js/board-diagram.js?v=20261106"></script>
   <script src="js/board-archive.js?v=20261106"></script>
   <script src="js/board-editor.js?v=20261106"></script>
+  <script src="js/roster-import.js?v=20261116"></script>
   <script src="js/app.js?v=pizarras-20261106"></script>
 </body>
 </html>
